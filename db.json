@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "id": "8f3b2a10-1c4a-4b7a-9c11-1e2a3b4c5d01",
+      "project_id": "customer_website",
+      "date": "2026-01-01",
+      "description": "Created SvelteKit project and initial folder structure.",
+      "start_time": "08:00",
+      "end_time": "16:00",
+      "created_at": "2026-01-01T16:05:12+01:00"
+    },
+    {
+      "id": "8f3b2a10-1c4a-4b7a-9c11-1e2a3b4c5d02",
+      "project_id": "customer_website",
+      "date": "2026-01-02",
+      "description": "Implemented homepage layout and navigation.",
+      "start_time": "09:00",
+      "end_time": "15:30",
+      "created_at": "2026-01-02T15:35:44+01:00"
+    },
+    {
+      "id": "8f3b2a10-1c4a-4b7a-9c11-1e2a3b4c5d03",
+      "project_id": "admin_dashboard",
+      "date": "2026-01-02",
+      "description": "Set up authentication and basic routing.",
+      "start_time": "16:00",
+      "end_time": "18:00",
+      "created_at": "2026-01-02T18:02:10+01:00"
+    },
+    {
+      "id": "8f3b2a10-1c4a-4b7a-9c11-1e2a3b4c5d04",
+      "project_id": "admin_dashboard",
+      "date": "2026-01-03",
+      "description": "Designed dashboard UI and connected mock API data.",
+      "start_time": "10:00",
+      "end_time": "17:00",
+      "created_at": "2026-01-03T17:10:27+01:00"
+    },
+    {
+      "id": "8f3b2a10-1c4a-4b7a-9c11-1e2a3b4c5d05",
+      "project_id": "marketing_site",
+      "date": "2026-01-04",
+      "description": "Created landing page mockups.",
+      "start_time": "09:30",
+      "end_time": "14:30",
+      "created_at": "2026-01-04T14:35:00+01:00"
+    },
+    {
+      "id": "8f3b2a10-1c4a-4b7a-9c11-1e2a3b4c5d06",
+      "project_id": "marketing_site",
+      "date": "2026-01-05",
+      "description": "Implemented responsive layout for landing page.",
+      "start_time": "10:00",
+      "end_time": "16:00",
+      "created_at": "2026-01-05T16:05:00+01:00"
+    },
+    {
+      "id": "8f3b2a10-1c4a-4b7a-9c11-1e2a3b4c5d07",
+      "project_id": "customer_website",
+      "date": "2026-01-05",
+      "description": "Fixed bugs in homepage carousel.",
+      "start_time": "16:30",
+      "end_time": "18:00",
+      "created_at": "2026-01-05T18:05:00+01:00"
+    }
+  ],
+  "projects": {
+    "customer_website": {
+      "name": "Customer Website"
+    },
+    "admin_dashboard": {
+      "name": "Admin Dashboard"
+    },
+    "marketing_site": {
+      "name": "Marketing Site"
+    }
+  }
+}
