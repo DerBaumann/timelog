@@ -6,7 +6,7 @@ vars:
   MAIN_PATH: ./main.go
 
 env:
-  TIMELOG_STOREPATH: ./store.json
+  TIMELOG_STOREPATH: ./store.example.json
 
 tasks:
   run:

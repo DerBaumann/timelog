@@ -22,8 +22,8 @@ type Entry struct {
 	ProjectKey  string    `json:"project_key"`
 	Date        string    `json:"date"`
 	Description string    `json:"description"`
-	StartTime   int       `json:"start_time"`
-	EndTime     int       `json:"end_time"`
+	StartTime   string    `json:"start_time"`
+	EndTime     string    `json:"end_time"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 

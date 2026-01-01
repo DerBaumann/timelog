@@ -1,21 +1,26 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
+	"timelog/internal/components"
 	"timelog/internal/store"
 
+	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 type Model struct {
 	store *store.Store
+	tbl   table.Model
 }
 
 func NewModel(store *store.Store) Model {
-	return Model{store}
+	return Model{
+		store: store,
+		tbl:   components.NewTable(store),
+	}
 }
 
 func (m Model) Init() tea.Cmd {
@@ -37,13 +42,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) View() string {
 	headerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("184")).
-		Background(lipgloss.Color("26")).
-		Bold(true).
-		Padding(1, 4)
+		Bold(true)
 
 	s := headerStyle.Render("Timelog")
 
-	s += fmt.Sprintf("\n\n%+v", *m.store)
+	s += "\n\n" + m.tbl.View()
+
+	// s += fmt.Sprintf("\n\n%+v", *m.store)
 
 	return "\n" + s + "\n\n"
 }
