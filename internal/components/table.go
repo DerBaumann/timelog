@@ -22,7 +22,7 @@ func NewTable(store *store.Store) table.Model {
 	for _, e := range store.Entries {
 		rows = append(rows, table.Row{
 			e.Date,
-			store.Projects[e.ProjectKey].Name,
+			store.Projects[e.ProjectID].Name,
 			e.Description,
 			fmt.Sprintf("%s - %s", e.StartTime, e.EndTime),
 		})
@@ -31,7 +31,7 @@ func NewTable(store *store.Store) table.Model {
 	t := table.New(
 		table.WithColumns(cols),
 		table.WithRows(rows),
-		table.WithFocused(true),
+		table.WithFocused(false),
 		table.WithHeight(7),
 	)
 
@@ -41,10 +41,7 @@ func NewTable(store *store.Store) table.Model {
 		BorderForeground(lipgloss.Color("240")).
 		BorderBottom(true).
 		Bold(false)
-	tableStyle.Selected = tableStyle.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
+	tableStyle.Selected = lipgloss.NewStyle()
 	t.SetStyles(tableStyle)
 
 	return t

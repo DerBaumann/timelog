@@ -19,7 +19,7 @@ type Store struct {
 // Both times are the amount of minutes since midnight
 type Entry struct {
 	ID          uuid.UUID `json:"id"`
-	ProjectKey  string    `json:"project_key"`
+	ProjectID   string    `json:"project_id"`
 	Date        string    `json:"date"`
 	Description string    `json:"description"`
 	StartTime   string    `json:"start_time"`
