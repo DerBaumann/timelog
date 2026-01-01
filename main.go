@@ -1,17 +1,23 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 
-	"timelog/internal/utils"
+	"timelog/internal/store"
 )
 
 func main() {
-	storeFile, err := utils.GetStoreFile()
+	store, err := store.ReadFile()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(storeFile)
+	fmt.Printf("%+v", *store)
+
+	if err := json.NewEncoder(os.Stdout).Encode(store); err != nil {
+		log.Fatal(err)
+	}
 }
