@@ -3,7 +3,6 @@ package store
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -69,31 +68,23 @@ func ReadFile() (*Store, error) {
 
 	file, err := os.Open(path)
 	if err != nil {
-		fmt.Println("Working")
-		fmt.Printf("Type: %T\n", err)
-
 		if errors.Is(err, os.ErrNotExist) {
-			fmt.Println("Working")
 
 			data, err := json.Marshal(store)
 			if err != nil {
 				return nil, err
 			}
 
-			fmt.Println("Working")
 			file, err = os.Create(path)
 			if err != nil {
-				fmt.Printf("Type: %T\n", err)
 				return nil, err
 			}
-			fmt.Println("Working")
 
 			if _, err := file.Write(data); err != nil {
 				file.Close()
 				return nil, err
 			}
 		} else {
-			fmt.Println("Err not os.ErrNotExist")
 			return nil, err
 		}
 	}
