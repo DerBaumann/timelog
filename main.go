@@ -1,7 +1,17 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+
+	"timelog/internal/utils"
+)
 
 func main() {
-	fmt.Println("Hello, Go!")
+	storeFile, err := utils.GetStoreFile()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(storeFile)
 }
