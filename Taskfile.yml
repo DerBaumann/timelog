@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=https://taskfile.dev/schema.json
+
+version: "3"
+
+vars:
+  MAIN_PATH: ./main.go
+
+env:
+  TIMELOG_STOREPATH: ./store.json
+
+tasks:
+  run:
+    desc: Runs the program
+    cmds:
+      - go run {{ .MAIN_PATH }}
+    silent: true
