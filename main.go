@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-
 	"timelog/internal/components"
 	"timelog/internal/store"
 
@@ -47,8 +46,6 @@ func (m Model) View() string {
 	s := headerStyle.Render("Timelog")
 
 	s += "\n\n" + m.tbl.View()
-
-	// s += fmt.Sprintf("\n\n%+v", *m.store)
 
 	return "\n" + s + "\n\n"
 }
