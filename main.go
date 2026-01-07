@@ -12,30 +12,40 @@ import (
 
 type Model struct {
 	store *store.Store
-	tbl   table.Model
+	table table.Model
 }
 
 func NewModel(store *store.Store) Model {
 	return Model{
 		store: store,
-		tbl:   components.NewTable(store),
+		table: components.NewTable(store),
 	}
 }
 
-func (m Model) Init() tea.Cmd {
-	return nil
-}
+func (m Model) Init() tea.Cmd { return nil }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q":
+		case "esc":
+			if m.table.Focused() {
+				m.table.Blur()
+			} else {
+				m.table.Focus()
+			}
+		case "q", "ctrl+c":
+			return m, tea.Quit
+		case "enter":
+			// return m, tea.Batch(
+			// 	tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
+			// )
 			return m, tea.Quit
 		}
 	}
-
-	return m, nil
+	m.table, cmd = m.table.Update(msg)
+	return m, cmd
 }
 
 func (m Model) View() string {
@@ -45,7 +55,7 @@ func (m Model) View() string {
 
 	s := headerStyle.Render("Timelog")
 
-	s += "\n\n" + m.tbl.View()
+	s += "\n\n" + m.table.View()
 
 	return "\n" + s + "\n\n"
 }

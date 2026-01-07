@@ -31,18 +31,21 @@ func NewTable(store *store.Store) table.Model {
 	t := table.New(
 		table.WithColumns(cols),
 		table.WithRows(rows),
-		table.WithFocused(false),
+		table.WithFocused(true),
 		table.WithHeight(7),
 	)
 
-	tableStyle := table.DefaultStyles()
-	tableStyle.Header = tableStyle.Header.
+	s := table.DefaultStyles()
+	s.Header = s.Header.
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("240")).
 		BorderBottom(true).
 		Bold(false)
-	tableStyle.Selected = lipgloss.NewStyle()
-	t.SetStyles(tableStyle)
+	s.Selected = s.Selected.
+		Foreground(lipgloss.Color("229")).
+		Background(lipgloss.Color("57")).
+		Bold(false)
+	t.SetStyles(s)
 
 	return t
 }
