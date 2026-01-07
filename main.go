@@ -11,14 +11,16 @@ import (
 )
 
 type Model struct {
-	store *store.Store
-	table table.Model
+	store       *store.Store
+	table       table.Model
+	currentView string
 }
 
 func NewModel(store *store.Store) Model {
 	return Model{
-		store: store,
-		table: components.NewTable(store),
+		store:       store,
+		table:       components.NewTable(store),
+		currentView: "main",
 	}
 }
 
@@ -30,10 +32,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "esc":
-			if m.table.Focused() {
-				m.table.Blur()
-			} else {
-				m.table.Focus()
+			switch m.currentView {
+			case "main":
+				if m.table.Focused() {
+					m.table.Blur()
+				} else {
+					m.table.Focus()
+				}
+			default:
+				m.currentView = "main"
 			}
 		case "q", "ctrl+c":
 			return m, tea.Quit
@@ -42,6 +49,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// 	tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
 			// )
 			return m, tea.Quit
+		case "a", "+":
+			m.currentView = "add"
 		}
 	}
 	m.table, cmd = m.table.Update(msg)
@@ -55,7 +64,16 @@ func (m Model) View() string {
 
 	s := headerStyle.Render("Timelog")
 
-	s += "\n\n" + m.table.View()
+	s += "\n\n"
+
+	switch m.currentView {
+	case "main":
+		s += m.table.View()
+	case "add":
+		s += "Add View"
+	default:
+		return "View not found!"
+	}
 
 	return "\n" + s + "\n\n"
 }
