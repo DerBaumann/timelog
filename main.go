@@ -2,25 +2,44 @@ package main
 
 import (
 	"log"
+
 	"timelog/internal/components"
 	"timelog/internal/store"
 
+	"github.com/charmbracelet/bubbles/stopwatch"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 )
 
 type Model struct {
-	store       *store.Store
-	table       table.Model
-	currentView string
+	store           *store.Store
+	table           table.Model
+	currentView     string
+	projectSelect   *huh.Select[string]
+	descriptionText *huh.Text
+	stopwatch       stopwatch.Model
 }
 
 func NewModel(store *store.Store) Model {
+	options := make([]huh.Option[string], len(store.Projects))
+	for k, p := range store.Projects {
+		options = append(options, huh.NewOption(p.Name, k))
+	}
+
 	return Model{
 		store:       store,
 		table:       components.NewTable(store),
 		currentView: "main",
+		projectSelect: huh.NewSelect[string]().
+			Key("project").
+			Options(options...).
+			Title("Project"),
+		descriptionText: huh.NewText().
+			Title("Description").
+			Key("description"),
+		stopwatch: stopwatch.New(),
 	}
 }
 
