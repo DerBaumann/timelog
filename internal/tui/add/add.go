@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/stopwatch"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
+	"github.com/google/uuid"
 )
 
 type FormStep int
@@ -154,6 +155,27 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		model, cmd = m.postTimerForm.Update(msg)
 		m.postTimerForm = model.(*huh.Form)
 		m.postTimerForm.GetFocusedField().Focus()
+
+		if m.postTimerForm.State == huh.StateCompleted {
+			// save data
+			id, err := uuid.NewRandom()
+			if err != nil {
+				panic(err)
+			}
+
+			m.store.Entries = append(m.store.Entries, store.Entry{
+				ID:          id,
+				ProjectID:   m.data.Project,
+				Date:        m.data.EndTime.Format("2006-01-02"),
+				Description: m.data.Description,
+				StartTime:   m.data.StartTime.Format("15:04"),
+				EndTime:     m.data.EndTime.Format("15:04"),
+				CreatedAt:   time.Now(),
+			})
+
+			m.data = &FormData{}
+			m.step = Project
+		}
 	}
 
 	return m, cmd
