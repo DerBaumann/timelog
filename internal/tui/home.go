@@ -1,4 +1,4 @@
-package components
+package tui
 
 import (
 	"fmt"
@@ -6,10 +6,16 @@ import (
 	"timelog/internal/store"
 
 	"github.com/charmbracelet/bubbles/table"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-func NewTable(store *store.Store) table.Model {
+type HomeUI struct {
+	table table.Model
+	store *store.Store
+}
+
+func NewHomeUI(store *store.Store) HomeUI {
 	cols := []table.Column{
 		{Title: "Day", Width: 15},
 		{Title: "Project", Width: 15},
@@ -47,5 +53,38 @@ func NewTable(store *store.Store) table.Model {
 		Bold(false)
 	t.SetStyles(s)
 
-	return t
+	return HomeUI{
+		table: t,
+		store: store,
+	}
 }
+
+func (m HomeUI) Init() tea.Cmd { return nil }
+
+func (m HomeUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "esc":
+			if m.table.Focused() {
+				m.table.Blur()
+			} else {
+				m.table.Focus()
+			}
+		case "q", "ctrl+c":
+			return m, tea.Quit
+		case "enter":
+			// return m, tea.Batch(
+			// 	tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
+			// )
+			return m, tea.Quit
+		case "a", "+":
+			return m, Route(AddRoute)
+		}
+	}
+	m.table, cmd = m.table.Update(msg)
+	return m, cmd
+}
+
+func (m HomeUI) View() string { return m.table.View() }
