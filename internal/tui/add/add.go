@@ -72,7 +72,7 @@ func New(store *store.Store) Model {
 			key.WithDisabled(),
 		),
 		back: key.NewBinding(
-			key.WithKeys("esc"),
+			key.WithKeys("esc", "delete"),
 			key.WithHelp("esc", "cancel"),
 		),
 	}
@@ -113,9 +113,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.keymap.save.SetEnabled(false)
 			m.keymap.start.SetEnabled(false)
 			m.keymap.stop.SetEnabled(false)
-			m.data = &FormData{}
-
+			*m.data = FormData{}
 			return m, routes.GoTo(routes.Home)
+		case key.Matches(msg, m.keymap.start, m.keymap.stop):
+			if m.stopwatch.Interval == 0 && !m.stopwatch.Running() {
+				m.data.StartTime = time.Now()
+			}
+			m.keymap.start.SetEnabled(m.stopwatch.Running())
+			m.keymap.stop.SetEnabled(!m.stopwatch.Running())
+			return m, m.stopwatch.Toggle()
+		case key.Matches(msg, m.keymap.save):
+			m.data.EndTime = time.Now()
+			m.data.Duration = m.stopwatch.Elapsed()
+			m.step = Description
+
+			m.keymap.save.SetEnabled(false)
+			m.keymap.start.SetEnabled(false)
+			m.keymap.stop.SetEnabled(false)
+
+			return m, m.stopwatch.Stop()
 		}
 	}
 
@@ -131,7 +147,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.step = Stopwatch
 			m.keymap.save.SetEnabled(true)
 			m.keymap.start.SetEnabled(true)
-			m.keymap.stop.SetEnabled(true)
 		}
 	case Stopwatch:
 		m.stopwatch, cmd = m.stopwatch.Update(msg)
