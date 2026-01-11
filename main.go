@@ -4,7 +4,9 @@ import (
 	"log"
 
 	"timelog/internal/store"
-	"timelog/internal/tui"
+	"timelog/internal/tui/add"
+	"timelog/internal/tui/home"
+	"timelog/internal/tui/routes"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -12,17 +14,17 @@ import (
 
 type Model struct {
 	store        *store.Store
-	home         tui.HomeUI
-	add          tui.AddUI
-	currentRoute tui.RouteMsg
+	home         home.Model
+	add          add.Model
+	currentRoute routes.Route
 }
 
 func NewModel(store *store.Store) Model {
 	return Model{
 		store:        store,
-		home:         tui.NewHomeUI(store),
-		add:          tui.NewAddUI(store),
-		currentRoute: tui.HomeRoute,
+		home:         home.New(store),
+		add:          add.New(store),
+		currentRoute: routes.Home,
 	}
 }
 
@@ -41,26 +43,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	// routing
-	case tui.RouteMsg:
-		switch msg {
-		case tui.HomeRoute:
-			m.currentRoute = tui.HomeRoute
-		case tui.AddRoute:
-			m.currentRoute = tui.AddRoute
-		}
+	case routes.Route:
+		m.currentRoute = msg
 	}
 
 	// route updates
 	var model tea.Model
 	switch m.currentRoute {
-	case tui.HomeRoute:
+	case routes.Home:
 		model, cmd = m.home.Update(msg)
-		if mod, ok := model.(tui.HomeUI); ok {
+		if mod, ok := model.(home.Model); ok {
 			m.home = mod
 		}
-	case tui.AddRoute:
+	case routes.Add:
 		model, cmd = m.add.Update(msg)
-		if mod, ok := model.(tui.AddUI); ok {
+		if mod, ok := model.(add.Model); ok {
 			m.add = mod
 		}
 	}
@@ -78,9 +75,9 @@ func (m Model) View() string {
 	s += "\n\n"
 
 	switch m.currentRoute {
-	case tui.HomeRoute:
+	case routes.Home:
 		s += m.home.View()
-	case tui.AddRoute:
+	case routes.Add:
 		s += m.add.View()
 	default:
 		return "View not found!"
