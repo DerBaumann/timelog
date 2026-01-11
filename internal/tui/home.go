@@ -5,14 +5,22 @@ import (
 
 	"timelog/internal/store"
 
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
+type keymap struct {
+	add key.Binding
+}
+
 type HomeUI struct {
-	table table.Model
-	store *store.Store
+	table  table.Model
+	store  *store.Store
+	keymap keymap
+	help   help.Model
 }
 
 func NewHomeUI(store *store.Store) HomeUI {
@@ -53,9 +61,18 @@ func NewHomeUI(store *store.Store) HomeUI {
 		Bold(false)
 	t.SetStyles(s)
 
+	k := keymap{
+		add: key.NewBinding(
+			key.WithKeys("a", "+"),
+			key.WithHelp("a", "add new entry"),
+		),
+	}
+
 	return HomeUI{
-		table: t,
-		store: store,
+		table:  t,
+		store:  store,
+		keymap: k,
+		help:   help.New(),
 	}
 }
 
@@ -65,21 +82,8 @@ func (m HomeUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "esc":
-			if m.table.Focused() {
-				m.table.Blur()
-			} else {
-				m.table.Focus()
-			}
-		case "q", "ctrl+c":
-			return m, tea.Quit
-		case "enter":
-			// return m, tea.Batch(
-			// 	tea.Printf("Let's go to %s!", m.table.SelectedRow()[1]),
-			// )
-			return m, tea.Quit
-		case "a", "+":
+		switch {
+		case key.Matches(msg, m.keymap.add):
 			return m, Route(AddRoute)
 		}
 	}
@@ -87,4 +91,18 @@ func (m HomeUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m HomeUI) View() string { return m.table.View() }
+func (m HomeUI) helpView() string {
+	return "\n" + m.help.ShortHelpView([]key.Binding{
+		m.keymap.add,
+		m.table.KeyMap.LineDown,
+		m.table.KeyMap.LineUp,
+	})
+}
+
+func (m HomeUI) View() string {
+	s := m.table.View() + "\n"
+
+	s += m.helpView()
+
+	return s
+}
