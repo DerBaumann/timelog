@@ -115,6 +115,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.keymap.start.SetEnabled(false)
 			m.keymap.stop.SetEnabled(false)
 			*m.data = FormData{}
+
+			m.preTimerForm.State = huh.StateNormal
+			m.postTimerForm.State = huh.StateNormal
+
 			return m, routes.GoTo(routes.Home)
 		case key.Matches(msg, m.keymap.start, m.keymap.stop):
 			if m.stopwatch.Interval == 0 && !m.stopwatch.Running() {
@@ -175,6 +179,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			m.data = &FormData{}
 			m.step = Project
+			m.preTimerForm.State = huh.StateNormal
+			m.postTimerForm.State = huh.StateNormal
+
+			return m, routes.GoTo(routes.Home)
 		}
 	}
 
