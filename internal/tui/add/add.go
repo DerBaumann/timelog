@@ -153,6 +153,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case Description:
 		model, cmd = m.postTimerForm.Update(msg)
 		m.postTimerForm = model.(*huh.Form)
+		m.postTimerForm.GetFocusedField().Focus()
 	}
 
 	return m, cmd
