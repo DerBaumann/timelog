@@ -110,16 +110,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keymap.back):
-			m.step = Project
-			m.keymap.save.SetEnabled(false)
-			m.keymap.start.SetEnabled(false)
-			m.keymap.stop.SetEnabled(false)
-			*m.data = FormData{}
-
-			m.preTimerForm.State = huh.StateNormal
-			m.postTimerForm.State = huh.StateNormal
-
-			return m, routes.GoTo(routes.Home)
+			return New(m.store), routes.GoTo(routes.Home)
 		case key.Matches(msg, m.keymap.start, m.keymap.stop):
 			if m.stopwatch.Interval == 0 && !m.stopwatch.Running() {
 				m.data.StartTime = time.Now()
@@ -177,12 +168,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				CreatedAt:   time.Now(),
 			})
 
-			m.data = &FormData{}
-			m.step = Project
-			m.preTimerForm.State = huh.StateNormal
-			m.postTimerForm.State = huh.StateNormal
-
-			return m, routes.GoTo(routes.Home)
+			return New(m.store), routes.GoTo(routes.Home)
 		}
 	}
 
