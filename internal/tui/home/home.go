@@ -24,14 +24,7 @@ type Model struct {
 	help   help.Model
 }
 
-func New(store *store.Store) Model {
-	cols := []table.Column{
-		{Title: "Day", Width: 15},
-		{Title: "Project", Width: 15},
-		{Title: "Description", Width: 15},
-		{Title: "Duration", Width: 15},
-	}
-
+func generateRows(store *store.Store) []table.Row {
 	rows := []table.Row{}
 
 	for _, e := range store.Entries {
@@ -43,9 +36,20 @@ func New(store *store.Store) Model {
 		})
 	}
 
+	return rows
+}
+
+func New(store *store.Store) Model {
+	cols := []table.Column{
+		{Title: "Day", Width: 15},
+		{Title: "Project", Width: 15},
+		{Title: "Description", Width: 15},
+		{Title: "Duration", Width: 15},
+	}
+
 	t := table.New(
 		table.WithColumns(cols),
-		table.WithRows(rows),
+		table.WithRows(generateRows(store)),
 		table.WithFocused(true),
 		table.WithHeight(7),
 	)
