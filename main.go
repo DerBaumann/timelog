@@ -44,6 +44,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// routing
 	case routes.Route:
+		// switch msg {
+		// case routes.Home:
+		// 	m.home = home.New(m.store)
+		// case routes.Add:
+		// 	m.add = add.New(m.store)
+		// }
 		m.currentRoute = msg
 	}
 

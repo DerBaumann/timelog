@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"timelog/internal/store"
+	"timelog/internal/tui/cmds"
 	"timelog/internal/tui/routes"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -168,7 +169,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				CreatedAt:   time.Now(),
 			})
 
-			return New(m.store), routes.GoTo(routes.Home)
+			return New(m.store), tea.Batch(
+				cmds.RefreshData,
+				routes.GoTo(routes.Home),
+			)
 		}
 	}
 
