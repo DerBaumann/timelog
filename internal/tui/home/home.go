@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"timelog/internal/store"
+	"timelog/internal/tui/cmds"
 	"timelog/internal/tui/routes"
 
 	"github.com/charmbracelet/bubbles/help"
@@ -91,6 +92,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.add):
 			return m, routes.GoTo(routes.Add)
 		}
+	case cmds.RefreshDataMsg:
+		m.table.SetRows(generateRows(m.store))
 	}
 	m.table, cmd = m.table.Update(msg)
 	return m, cmd
