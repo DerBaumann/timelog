@@ -10,6 +10,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const permissions = 0o644
+
 type Store struct {
 	Version  int                `json:"version"`
 	Entries  []Entry            `json:"entries"`
@@ -50,6 +52,25 @@ func getPath() (string, error) {
 	return path, nil
 }
 
+func writeEmptyStore(path string) (*os.File, error) {
+	data, err := json.Marshal(New())
+	if err != nil {
+		return nil, err
+	}
+
+	file, err := os.Create(path)
+	if err != nil {
+		return nil, err
+	}
+
+	if _, err := file.Write(data); err != nil {
+		file.Close()
+		return nil, err
+	}
+
+	return file, nil
+}
+
 func New() *Store {
 	return &Store{
 		Version:  1,
@@ -69,19 +90,8 @@ func ReadFile() (*Store, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-
-			data, err := json.Marshal(store)
+			file, err = writeEmptyStore(path)
 			if err != nil {
-				return nil, err
-			}
-
-			file, err = os.Create(path)
-			if err != nil {
-				return nil, err
-			}
-
-			if _, err := file.Write(data); err != nil {
-				file.Close()
 				return nil, err
 			}
 		} else {
@@ -90,7 +100,41 @@ func ReadFile() (*Store, error) {
 	}
 	defer file.Close()
 
-	json.NewDecoder(file).Decode(store)
+	if err := json.NewDecoder(file).Decode(store); err != nil {
+		return nil, err
+	}
 
 	return store, nil
+}
+
+func (s *Store) Write() error {
+	path, err := getPath()
+	if err != nil {
+		return err
+	}
+
+	// file, err := os.Open(path)
+	// if err != nil {
+	// 	if errors.Is(err, os.ErrNotExist) {
+	// 		file, err = writeEmptyStore(path)
+	// 		if err != nil {
+	// 			return err
+	// 		}
+	// 	} else {
+	// 		return err
+	// 	}
+	// }
+	// defer file.Close()
+
+	// if err := json.NewEncoder(file).Encode(s); err != nil {
+	// 	return err
+	// }
+
+	data, err := json.Marshal(*s)
+
+	if err := os.WriteFile(path, data, permissions); err != nil {
+		return err
+	}
+
+	return nil
 }
