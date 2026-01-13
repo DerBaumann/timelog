@@ -113,9 +113,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keymap.back):
 			return New(m.store), routes.GoTo(routes.Home)
 		case key.Matches(msg, m.keymap.start, m.keymap.stop):
-			if m.stopwatch.Interval == 0 && !m.stopwatch.Running() {
-				m.data.StartTime = time.Now()
-			}
 			m.keymap.start.SetEnabled(m.stopwatch.Running())
 			m.keymap.stop.SetEnabled(!m.stopwatch.Running())
 			return m, m.stopwatch.Toggle()
@@ -144,9 +141,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.step = Stopwatch
 			m.keymap.save.SetEnabled(true)
 			m.keymap.start.SetEnabled(true)
+			m.data.StartTime = time.Now()
+			return m, tea.Batch(
+				m.stopwatch.Start(),
+				cmd,
+			)
 		}
+
+		return m, cmd
 	case Stopwatch:
 		m.stopwatch, cmd = m.stopwatch.Update(msg)
+		return m, cmd
 	case Description:
 		model, cmd = m.postTimerForm.Update(msg)
 		m.postTimerForm = model.(*huh.Form)
@@ -178,6 +183,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				routes.GoTo(routes.Home),
 			)
 		}
+
+		return m, cmd
 	}
 
 	return m, cmd
