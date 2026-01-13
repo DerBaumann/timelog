@@ -169,6 +169,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				CreatedAt:   time.Now(),
 			})
 
+			if err := m.store.Write(); err != nil {
+				panic(err)
+			}
+
 			return New(m.store), tea.Batch(
 				cmds.RefreshData,
 				routes.GoTo(routes.Home),
