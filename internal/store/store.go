@@ -40,7 +40,7 @@ func getPath() (string, error) {
 
 	configDir, err := os.UserConfigDir()
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	path := filepath.Join(configDir, "timelog", "store.json")
@@ -52,23 +52,17 @@ func getPath() (string, error) {
 	return path, nil
 }
 
-func writeEmptyStore(path string) (*os.File, error) {
+func writeEmptyStore(path string) ([]byte, error) {
 	data, err := json.Marshal(New())
 	if err != nil {
 		return nil, err
 	}
 
-	file, err := os.Create(path)
-	if err != nil {
+	if err := os.WriteFile(path, data, permissions); err != nil {
 		return nil, err
 	}
 
-	if _, err := file.Write(data); err != nil {
-		file.Close()
-		return nil, err
-	}
-
-	return file, nil
+	return data, nil
 }
 
 func New() *Store {
@@ -85,12 +79,10 @@ func ReadFile() (*Store, error) {
 		return nil, err
 	}
 
-	store := New()
-
-	file, err := os.Open(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			file, err = writeEmptyStore(path)
+			data, err = writeEmptyStore(path)
 			if err != nil {
 				return nil, err
 			}
@@ -98,9 +90,9 @@ func ReadFile() (*Store, error) {
 			return nil, err
 		}
 	}
-	defer file.Close()
 
-	if err := json.NewDecoder(file).Decode(store); err != nil {
+	store := &Store{}
+	if err := json.Unmarshal(data, &store); err != nil {
 		return nil, err
 	}
 
@@ -113,24 +105,10 @@ func (s *Store) Write() error {
 		return err
 	}
 
-	// file, err := os.Open(path)
-	// if err != nil {
-	// 	if errors.Is(err, os.ErrNotExist) {
-	// 		file, err = writeEmptyStore(path)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-	// 	} else {
-	// 		return err
-	// 	}
-	// }
-	// defer file.Close()
-
-	// if err := json.NewEncoder(file).Encode(s); err != nil {
-	// 	return err
-	// }
-
 	data, err := json.Marshal(*s)
+	if err != nil {
+		return err
+	}
 
 	if err := os.WriteFile(path, data, permissions); err != nil {
 		return err
