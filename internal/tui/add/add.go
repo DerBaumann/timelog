@@ -1,6 +1,7 @@
 package add
 
 import (
+	"strings"
 	"time"
 
 	"timelog/internal/store"
@@ -19,6 +20,7 @@ type FormStep int
 
 const (
 	Project FormStep = iota
+	ProjectAdd
 	Stopwatch
 	Description
 )
@@ -32,21 +34,24 @@ type FormData struct {
 }
 
 type keymap struct {
-	start key.Binding
-	stop  key.Binding
-	save  key.Binding
-	back  key.Binding
+	add,
+	start,
+	stop,
+	save,
+	back key.Binding
 }
 
 type Model struct {
-	store         *store.Store
-	data          *FormData
-	preTimerForm  *huh.Form
-	stopwatch     stopwatch.Model
-	postTimerForm *huh.Form
-	step          FormStep
-	keymap        keymap
-	help          help.Model
+	store          *store.Store
+	data           *FormData
+	newProject     *string
+	addProjectForm *huh.Form
+	preTimerForm   *huh.Form
+	stopwatch      stopwatch.Model
+	postTimerForm  *huh.Form
+	step           FormStep
+	keymap         keymap
+	help           help.Model
 }
 
 func New(store *store.Store) Model {
@@ -57,7 +62,13 @@ func New(store *store.Store) Model {
 
 	data := &FormData{}
 
+	var newProject string
+
 	k := keymap{
+		add: key.NewBinding(
+			key.WithKeys("a", "+"),
+			key.WithHelp("a", "add project"),
+		),
 		start: key.NewBinding(
 			key.WithKeys(" "),
 			key.WithHelp("space", "start clock"),
@@ -80,8 +91,17 @@ func New(store *store.Store) Model {
 	}
 
 	return Model{
-		store: store,
-		data:  data,
+		store:      store,
+		data:       data,
+		newProject: &newProject,
+		addProjectForm: huh.NewForm(
+			huh.NewGroup(
+				huh.NewInput().
+					Title("Project Name").
+					Prompt("> ").
+					Value(&newProject),
+			),
+		),
 		preTimerForm: huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
@@ -110,6 +130,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
+		case key.Matches(msg, m.keymap.add):
+			if m.step == Project {
+				m.step = ProjectAdd
+				m.addProjectForm.GetFocusedField().Focus()
+				return m, nil
+			}
 		case key.Matches(msg, m.keymap.back):
 			return New(m.store), routes.GoTo(routes.Home)
 		case key.Matches(msg, m.keymap.start, m.keymap.stop):
@@ -139,6 +165,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.preTimerForm.State == huh.StateCompleted {
 			m.step = Stopwatch
+			m.keymap.add.SetEnabled(false)
 			m.keymap.save.SetEnabled(true)
 			m.keymap.start.SetEnabled(true)
 			m.data.StartTime = time.Now()
@@ -146,6 +173,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.stopwatch.Start(),
 				cmd,
 			)
+		}
+
+		return m, cmd
+	case ProjectAdd:
+		model, cmd = m.addProjectForm.Update(msg)
+		m.addProjectForm = model.(*huh.Form)
+
+		if m.addProjectForm.State == huh.StateCompleted {
+			project := store.Project{
+				Name: *m.newProject,
+			}
+			pid := strings.ReplaceAll(strings.ToLower(*m.newProject), " ", "_")
+			m.store.Projects[pid] = project
+
+			if err := m.store.Write(); err != nil {
+				panic(err)
+			}
+
+			return New(m.store), cmd
 		}
 
 		return m, cmd
@@ -192,6 +238,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) helpView() string {
 	return "\n" + m.help.ShortHelpView([]key.Binding{
+		m.keymap.add,
 		m.keymap.save,
 		m.keymap.start,
 		m.keymap.stop,
@@ -205,6 +252,8 @@ func (m Model) View() string {
 	switch m.step {
 	case Project:
 		s = m.preTimerForm.View()
+	case ProjectAdd:
+		s = m.addProjectForm.View()
 	case Stopwatch:
 		s = m.stopwatch.View()
 	case Description:
