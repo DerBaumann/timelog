@@ -26,8 +26,8 @@ const (
 
 type FormData struct {
 	Project     string
-	StartTime   time.Time
-	EndTime     time.Time
+	StartTime   store.Minutes
+	EndTime     store.Minutes
 	Duration    time.Duration
 	Description string
 }
@@ -142,7 +142,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.keymap.stop.SetEnabled(!m.stopwatch.Running())
 			return m, m.stopwatch.Toggle()
 		case key.Matches(msg, m.keymap.save):
-			m.data.EndTime = time.Now()
+			m.data.EndTime = store.MinutesSinceMidnight(time.Now())
 			m.data.Duration = m.stopwatch.Elapsed()
 			m.step = Description
 
@@ -167,7 +167,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.keymap.add.SetEnabled(false)
 			m.keymap.save.SetEnabled(true)
 			m.keymap.start.SetEnabled(true)
-			m.data.StartTime = time.Now()
+			m.data.StartTime = store.MinutesSinceMidnight(time.Now())
 			return m, tea.Batch(
 				m.stopwatch.Start(),
 				cmd,
@@ -212,10 +212,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.store.Entries = append(m.store.Entries, store.Entry{
 				ID:          id,
 				ProjectID:   m.data.Project,
-				Date:        m.data.EndTime.Format("2006-01-02"),
+				Date:        time.Now().Format("2006-01-02"),
 				Description: m.data.Description,
-				StartTime:   m.data.StartTime.Format("15:04"),
-				EndTime:     m.data.EndTime.Format("15:04"),
+				StartTime:   m.data.StartTime,
+				EndTime:     m.data.EndTime,
 				CreatedAt:   time.Now(),
 			})
 
