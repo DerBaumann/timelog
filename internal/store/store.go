@@ -3,6 +3,7 @@ package store
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -12,20 +13,31 @@ import (
 
 const permissions = 0o644
 
+type Minutes int
+
+func MinutesSinceMidnight(t time.Time) Minutes {
+	return Minutes(t.Hour()*60 + t.Minute())
+}
+
+func (m Minutes) Format() string {
+	hours := m / 60
+	return fmt.Sprintf("%02d:%02d", hours, m-hours*60)
+}
+
 type Store struct {
 	Version  int                `json:"version"`
 	Entries  []Entry            `json:"entries"`
 	Projects map[string]Project `json:"projects"`
 }
 
-// Both times are the amount of minutes since midnight
+// Both times store the timestamps as minutes since midnight
 type Entry struct {
 	ID          uuid.UUID `json:"id"`
 	ProjectID   string    `json:"project_id"`
 	Date        string    `json:"date"`
 	Description string    `json:"description"`
-	StartTime   string    `json:"start_time"`
-	EndTime     string    `json:"end_time"`
+	StartTime   Minutes   `json:"start_time"`
+	EndTime     Minutes   `json:"end_time"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 

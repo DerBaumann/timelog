@@ -32,7 +32,7 @@ func generateRows(store *store.Store) []table.Row {
 			e.Date,
 			store.Projects[e.ProjectID].Name,
 			e.Description,
-			fmt.Sprintf("%s - %s", e.StartTime, e.EndTime),
+			fmt.Sprintf("%s - %s", e.StartTime.Format(), e.EndTime.Format()),
 		})
 	}
 
