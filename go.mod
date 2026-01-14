@@ -1,4 +1,4 @@
-module timelog
+module github.com/DerBaumann/timelog
 
 go 1.25.5
 

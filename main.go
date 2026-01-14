@@ -3,11 +3,10 @@ package main
 import (
 	"log"
 
-	"timelog/internal/store"
-	"timelog/internal/tui/add"
-	"timelog/internal/tui/home"
-	"timelog/internal/tui/routes"
-
+	"github.com/DerBaumann/timelog/internal/store"
+	"github.com/DerBaumann/timelog/internal/tui/add"
+	"github.com/DerBaumann/timelog/internal/tui/home"
+	"github.com/DerBaumann/timelog/internal/tui/routes"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
