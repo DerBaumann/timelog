@@ -4,10 +4,9 @@ import (
 	"strings"
 	"time"
 
-	"timelog/internal/store"
-	"timelog/internal/tui/cmds"
-	"timelog/internal/tui/routes"
-
+	"github.com/DerBaumann/timelog/internal/store"
+	"github.com/DerBaumann/timelog/internal/tui/cmds"
+	"github.com/DerBaumann/timelog/internal/tui/routes"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/stopwatch"
