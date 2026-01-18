@@ -1,6 +1,7 @@
 package export
 
 import (
+	"fmt"
 	"os"
 	"slices"
 	"strings"
@@ -41,7 +42,9 @@ func New(store *store.Store) Model {
 }
 
 func (m Model) Init() tea.Cmd {
+	fmt.Println("Working")
 	return func() tea.Msg {
+		fmt.Println("Working")
 		var dates []string
 		for _, entry := range m.store.Entries {
 			if !slices.Contains(dates, entry.Date) {
@@ -49,6 +52,7 @@ func (m Model) Init() tea.Cmd {
 			}
 		}
 
+		fmt.Println("Working")
 		var days []DocDay
 		for _, date := range dates {
 			var entries []DocEntry
@@ -68,6 +72,7 @@ func (m Model) Init() tea.Cmd {
 				Entries: entries,
 			})
 		}
+		fmt.Println("Working")
 		docData := DocumentData{
 			Days: days,
 		}
@@ -84,21 +89,25 @@ func (m Model) Init() tea.Cmd {
 		{{ end }}
 		{{ end }}`
 
+		fmt.Println("Working")
 		tmpl, err := template.New("mddoc").Parse(tmplStr)
 		if err != nil {
 			panic(err)
 		}
 
+		fmt.Println("Working")
 		f, err := os.Create("./export.md")
 		if err != nil {
 			panic(err)
 		}
 		defer f.Close()
 
+		fmt.Println("Working")
 		if err := tmpl.Execute(f, docData); err != nil {
 			panic(err)
 		}
 
+		fmt.Println("Working")
 		return DoneMsg{}
 	}
 }
