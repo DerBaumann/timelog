@@ -14,19 +14,13 @@ import (
 
 type Model struct {
 	store        *store.Store
-	home         home.Model
-	add          add.Model
-	export       export.Model
-	currentRoute cmds.Route
+	currentRoute tea.Model
 }
 
 func NewModel(store *store.Store) Model {
 	return Model{
 		store:        store,
-		home:         home.New(store),
-		add:          add.New(store),
-		export:       export.New(store),
-		currentRoute: cmds.Home,
+		currentRoute: home.New(store),
 	}
 }
 
@@ -46,35 +40,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// routing
 	case cmds.Route:
-		// switch msg {
-		// case routes.Home:
-		// 	m.home = home.New(m.store)
-		// case routes.Add:
-		// 	m.add = add.New(m.store)
-		// }
-		m.currentRoute = msg
+		switch msg {
+		case cmds.Home:
+			m.currentRoute = home.New(m.store)
+		case cmds.Add:
+			m.currentRoute = add.New(m.store)
+		case cmds.Export:
+			m.currentRoute = export.New(m.store)
+		}
 	}
 
 	// route updates
-	var model tea.Model
-	switch m.currentRoute {
-	case cmds.Home:
-		model, cmd = m.home.Update(msg)
-		if mod, ok := model.(home.Model); ok {
-			m.home = mod
-		}
-	case cmds.Add:
-		model, cmd = m.add.Update(msg)
-		if mod, ok := model.(add.Model); ok {
-			m.add = mod
-		}
-	case cmds.Export:
-		model, cmd = m.export.Update(msg)
-		if mod, ok := model.(export.Model); ok {
-			m.export = mod
-		}
-	}
-
+	m.currentRoute, cmd = m.currentRoute.Update(msg)
 	return m, cmd
 }
 
@@ -87,16 +64,7 @@ func (m Model) View() string {
 
 	s += "\n\n"
 
-	switch m.currentRoute {
-	case cmds.Home:
-		s += m.home.View()
-	case cmds.Add:
-		s += m.add.View()
-	case cmds.Export:
-		s += m.export.View()
-	default:
-		return "View not found!"
-	}
+	s += m.currentRoute.View()
 
 	return "\n" + s + "\n\n"
 }
