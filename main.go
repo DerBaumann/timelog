@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/DerBaumann/timelog/internal/store"
@@ -14,12 +15,14 @@ import (
 
 type Model struct {
 	store        *store.Store
+	err          error
 	currentRoute tea.Model
 }
 
 func NewModel(store *store.Store) Model {
 	return Model{
 		store:        store,
+		err:          nil,
 		currentRoute: home.New(store),
 	}
 }
@@ -30,6 +33,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case cmds.ErrMsg:
+		if msg.Err != nil {
+			m.err = msg.Err
+			return m, nil
+		}
 
 	// default keymaps
 	case tea.KeyMsg:
@@ -48,6 +56,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case cmds.Export:
 			m.currentRoute = export.New(m.store)
 		}
+
+		return m, m.currentRoute.Init()
 	}
 
 	// route updates
@@ -56,6 +66,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	if m.err != nil {
+		style := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#ff0000"))
+		s := fmt.Sprintf("There was an Error:\n%s\n\nPress (q/ctrl+c) to quit\n", m.err.Error())
+		return style.Render(s)
+	}
+
 	headerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("184")).
 		Bold(true)

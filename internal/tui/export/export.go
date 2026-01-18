@@ -1,13 +1,13 @@
 package export
 
 import (
-	"fmt"
 	"os"
 	"slices"
 	"strings"
 	"text/template"
 
 	"github.com/DerBaumann/timelog/internal/store"
+	"github.com/DerBaumann/timelog/internal/tui/cmds"
 	tea "github.com/charmbracelet/bubbletea"
 )
 
@@ -41,25 +41,34 @@ func New(store *store.Store) Model {
 	}
 }
 
-func (m Model) Init() tea.Cmd {
-	fmt.Println("Working")
+const docTmpl = `# Arbeitsjournal
+
+{{ range .Days }}
+## {{ .Date }}
+
+
+| Projekt | Beschreibung | Zeit |
+| ------- | ------------ | ---- |
+{{ range .Entries }}| {{ .Project }} | {{ .Description }} | {{ .Start }} - {{ .End }} |
+{{ end }}
+{{ end }}`
+
+func exportCmd(s *store.Store) tea.Cmd {
 	return func() tea.Msg {
-		fmt.Println("Working")
 		var dates []string
-		for _, entry := range m.store.Entries {
+		for _, entry := range s.Entries {
 			if !slices.Contains(dates, entry.Date) {
 				dates = append(dates, entry.Date)
 			}
 		}
 
-		fmt.Println("Working")
 		var days []DocDay
 		for _, date := range dates {
 			var entries []DocEntry
-			for _, e := range m.store.Entries {
+			for _, e := range s.Entries {
 				if e.Date == date {
 					entries = append(entries, DocEntry{
-						Project:     m.store.Projects[e.ProjectID].Name,
+						Project:     s.Projects[e.ProjectID].Name,
 						Description: strings.ReplaceAll(e.Description, "\n", "<br />"),
 						Start:       e.StartTime.Format(),
 						End:         e.EndTime.Format(),
@@ -72,44 +81,31 @@ func (m Model) Init() tea.Cmd {
 				Entries: entries,
 			})
 		}
-		fmt.Println("Working")
 		docData := DocumentData{
 			Days: days,
 		}
 
-		tmplStr := `# Arbeitsjournal
-
-		{{ range .Dates }}
-		## {{ .Date }}
-
-		| Projekt | Beschreibung | Zeit |
-		| ------- | ------------ | ---- |
-		{{ range .Entries }}
-		| {{ .Project }} | {{ .Description }} | {{ .Start }} - {{ .End }} |
-		{{ end }}
-		{{ end }}`
-
-		fmt.Println("Working")
-		tmpl, err := template.New("mddoc").Parse(tmplStr)
+		tmpl, err := template.New("mddoc").Parse(docTmpl)
 		if err != nil {
-			panic(err)
+			return cmds.ErrMsg{Err: err}
 		}
 
-		fmt.Println("Working")
 		f, err := os.Create("./export.md")
 		if err != nil {
-			panic(err)
+			return cmds.ErrMsg{Err: err}
 		}
 		defer f.Close()
 
-		fmt.Println("Working")
 		if err := tmpl.Execute(f, docData); err != nil {
-			panic(err)
+			return cmds.ErrMsg{Err: err}
 		}
 
-		fmt.Println("Working")
 		return DoneMsg{}
 	}
+}
+
+func (m Model) Init() tea.Cmd {
+	return exportCmd(m.store)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -118,7 +114,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.loading = false
 		return m, tea.Quit
 	}
-
 	return m, nil
 }
 

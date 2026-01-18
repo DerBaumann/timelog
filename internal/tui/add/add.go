@@ -186,7 +186,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.store.Projects[pid] = project
 
 			if err := m.store.Write(); err != nil {
-				panic(err)
+				return m, cmds.ErrCmd(err)
 			}
 
 			return New(m.store), cmd
@@ -205,7 +205,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// save data
 			id, err := uuid.NewRandom()
 			if err != nil {
-				panic(err)
+				return m, cmds.ErrCmd(err)
 			}
 
 			m.store.Entries = append(m.store.Entries, store.Entry{
@@ -219,7 +219,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			})
 
 			if err := m.store.Write(); err != nil {
-				panic(err)
+				return m, cmds.ErrCmd(err)
 			}
 
 			return New(m.store), tea.Batch(

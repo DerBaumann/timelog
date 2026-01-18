@@ -19,3 +19,15 @@ func GoTo(to Route) tea.Cmd {
 		return to
 	}
 }
+
+type ErrMsg struct {
+	Err error
+}
+
+func ErrCmd(err error) tea.Cmd {
+	return func() tea.Msg {
+		return ErrMsg{
+			Err: err,
+		}
+	}
+}
