@@ -1,29 +1,29 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/DerBaumann/timelog/internal/store"
 	"github.com/DerBaumann/timelog/internal/tui/add"
+	"github.com/DerBaumann/timelog/internal/tui/cmds"
+	"github.com/DerBaumann/timelog/internal/tui/export"
 	"github.com/DerBaumann/timelog/internal/tui/home"
-	"github.com/DerBaumann/timelog/internal/tui/routes"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
 type Model struct {
 	store        *store.Store
-	home         home.Model
-	add          add.Model
-	currentRoute routes.Route
+	err          error
+	currentRoute tea.Model
 }
 
 func NewModel(store *store.Store) Model {
 	return Model{
 		store:        store,
-		home:         home.New(store),
-		add:          add.New(store),
-		currentRoute: routes.Home,
+		err:          nil,
+		currentRoute: home.New(store),
 	}
 }
 
@@ -33,6 +33,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
+	case cmds.ErrMsg:
+		if msg.Err != nil {
+			m.err = msg.Err
+			return m, nil
+		}
 
 	// default keymaps
 	case tea.KeyMsg:
@@ -42,35 +47,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	// routing
-	case routes.Route:
-		// switch msg {
-		// case routes.Home:
-		// 	m.home = home.New(m.store)
-		// case routes.Add:
-		// 	m.add = add.New(m.store)
-		// }
-		m.currentRoute = msg
+	case cmds.Route:
+		switch msg {
+		case cmds.Home:
+			m.currentRoute = home.New(m.store)
+		case cmds.Add:
+			m.currentRoute = add.New(m.store)
+		case cmds.Export:
+			m.currentRoute = export.New(m.store)
+		}
+
+		return m, m.currentRoute.Init()
 	}
 
 	// route updates
-	var model tea.Model
-	switch m.currentRoute {
-	case routes.Home:
-		model, cmd = m.home.Update(msg)
-		if mod, ok := model.(home.Model); ok {
-			m.home = mod
-		}
-	case routes.Add:
-		model, cmd = m.add.Update(msg)
-		if mod, ok := model.(add.Model); ok {
-			m.add = mod
-		}
-	}
-
+	m.currentRoute, cmd = m.currentRoute.Update(msg)
 	return m, cmd
 }
 
 func (m Model) View() string {
+	if m.err != nil {
+		style := lipgloss.NewStyle().
+			Bold(true).
+			Foreground(lipgloss.Color("#ff0000"))
+		s := fmt.Sprintf("There was an Error:\n%s\n\nPress (q/ctrl+c) to quit\n", m.err.Error())
+		return style.Render(s)
+	}
+
 	headerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("184")).
 		Bold(true)
@@ -79,14 +82,7 @@ func (m Model) View() string {
 
 	s += "\n\n"
 
-	switch m.currentRoute {
-	case routes.Home:
-		s += m.home.View()
-	case routes.Add:
-		s += m.add.View()
-	default:
-		return "View not found!"
-	}
+	s += m.currentRoute.View()
 
 	return "\n" + s + "\n\n"
 }

@@ -5,7 +5,6 @@ import (
 
 	"github.com/DerBaumann/timelog/internal/store"
 	"github.com/DerBaumann/timelog/internal/tui/cmds"
-	"github.com/DerBaumann/timelog/internal/tui/routes"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/table"
@@ -14,7 +13,8 @@ import (
 )
 
 type keymap struct {
-	add key.Binding
+	add,
+	export key.Binding
 }
 
 type Model struct {
@@ -71,6 +71,10 @@ func New(store *store.Store) Model {
 			key.WithKeys("a", "+"),
 			key.WithHelp("a", "add new entry"),
 		),
+		export: key.NewBinding(
+			key.WithKeys("e"),
+			key.WithHelp("e", "export data"),
+		),
 	}
 
 	return Model{
@@ -89,7 +93,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, m.keymap.add):
-			return m, routes.GoTo(routes.Add)
+			return m, cmds.GoTo(cmds.Add)
+		case key.Matches(msg, m.keymap.export):
+			return m, cmds.GoTo(cmds.Export)
 		}
 	case cmds.RefreshDataMsg:
 		m.table.SetRows(generateRows(m.store))
@@ -101,6 +107,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m Model) helpView() string {
 	return "\n" + m.help.ShortHelpView([]key.Binding{
 		m.keymap.add,
+		m.keymap.export,
 		m.table.KeyMap.LineDown,
 		m.table.KeyMap.LineUp,
 	})
