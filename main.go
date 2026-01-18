@@ -5,8 +5,9 @@ import (
 
 	"github.com/DerBaumann/timelog/internal/store"
 	"github.com/DerBaumann/timelog/internal/tui/add"
+	"github.com/DerBaumann/timelog/internal/tui/cmds"
+	"github.com/DerBaumann/timelog/internal/tui/export"
 	"github.com/DerBaumann/timelog/internal/tui/home"
-	"github.com/DerBaumann/timelog/internal/tui/routes"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -15,7 +16,8 @@ type Model struct {
 	store        *store.Store
 	home         home.Model
 	add          add.Model
-	currentRoute routes.Route
+	export       export.Model
+	currentRoute cmds.Route
 }
 
 func NewModel(store *store.Store) Model {
@@ -23,7 +25,8 @@ func NewModel(store *store.Store) Model {
 		store:        store,
 		home:         home.New(store),
 		add:          add.New(store),
-		currentRoute: routes.Home,
+		export:       export.New(store),
+		currentRoute: cmds.Home,
 	}
 }
 
@@ -42,7 +45,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	// routing
-	case routes.Route:
+	case cmds.Route:
 		// switch msg {
 		// case routes.Home:
 		// 	m.home = home.New(m.store)
@@ -55,15 +58,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// route updates
 	var model tea.Model
 	switch m.currentRoute {
-	case routes.Home:
+	case cmds.Home:
 		model, cmd = m.home.Update(msg)
 		if mod, ok := model.(home.Model); ok {
 			m.home = mod
 		}
-	case routes.Add:
+	case cmds.Add:
 		model, cmd = m.add.Update(msg)
 		if mod, ok := model.(add.Model); ok {
 			m.add = mod
+		}
+	case cmds.Export:
+		model, cmd = m.export.Update(msg)
+		if mod, ok := model.(export.Model); ok {
+			m.export = mod
 		}
 	}
 
@@ -80,10 +88,12 @@ func (m Model) View() string {
 	s += "\n\n"
 
 	switch m.currentRoute {
-	case routes.Home:
+	case cmds.Home:
 		s += m.home.View()
-	case routes.Add:
+	case cmds.Add:
 		s += m.add.View()
+	case cmds.Export:
+		s += m.export.View()
 	default:
 		return "View not found!"
 	}

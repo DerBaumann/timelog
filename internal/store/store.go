@@ -20,8 +20,7 @@ func MinutesSinceMidnight(t time.Time) Minutes {
 }
 
 func (m Minutes) Format() string {
-	hours := m / 60
-	return fmt.Sprintf("%02d:%02d", hours, m-hours*60)
+	return fmt.Sprintf("%02d:%02d", m/60, m%60)
 }
 
 type Store struct {

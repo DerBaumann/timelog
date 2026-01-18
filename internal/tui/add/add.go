@@ -6,7 +6,6 @@ import (
 
 	"github.com/DerBaumann/timelog/internal/store"
 	"github.com/DerBaumann/timelog/internal/tui/cmds"
-	"github.com/DerBaumann/timelog/internal/tui/routes"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/stopwatch"
@@ -136,7 +135,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case key.Matches(msg, m.keymap.back):
-			return New(m.store), routes.GoTo(routes.Home)
+			return New(m.store), cmds.GoTo(cmds.Home)
 		case key.Matches(msg, m.keymap.start, m.keymap.stop):
 			m.keymap.start.SetEnabled(m.stopwatch.Running())
 			m.keymap.stop.SetEnabled(!m.stopwatch.Running())
@@ -225,7 +224,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 			return New(m.store), tea.Batch(
 				cmds.RefreshData,
-				routes.GoTo(routes.Home),
+				cmds.GoTo(cmds.Home),
 			)
 		}
 
