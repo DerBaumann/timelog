@@ -1,0 +1,868 @@
+I am currently developing a app in go using bubbletea. the Problem is, that my code feels chaotic as fuck. here are a couple of file as a example. I want you to try and organize this code, so it is nicely structured and maintainable.
+
+/internal/tui/screens/add/add.go
+package add
+
+import (
+	"strings"
+	"time"
+
+	"github.com/DerBaumann/timelog/internal/store"
+	"github.com/DerBaumann/timelog/internal/tui/cmds"
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/key"
+	"github.com/charmbracelet/bubbles/stopwatch"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
+	"github.com/google/uuid"
+)
+
+type FormStep int
+
+const (
+	Project FormStep = iota
+	ProjectAdd
+	Stopwatch
+	Description
+)
+
+type FormData struct {
+	Project     string
+	StartTime   store.Minutes
+	EndTime     store.Minutes
+	Duration    time.Duration
+	Description string
+}
+
+type keymap struct {
+	add,
+	start,
+	stop,
+	save,
+	back key.Binding
+}
+
+type Model struct {
+	store          *store.Store
+	data           *FormData
+	newProject     *string
+	addProjectForm *huh.Form
+	preTimerForm   *huh.Form
+	stopwatch      stopwatch.Model
+	postTimerForm  *huh.Form
+	step           FormStep
+	keymap         keymap
+	help           help.Model
+}
+
+func New(store *store.Store) Model {
+	var options []huh.Option[string]
+	for k, p := range store.Projects {
+		options = append(options, huh.NewOption(p.Name, k))
+	}
+
+	data := &FormData{}
+
+	var newProject string
+
+	k := keymap{
+		add: key.NewBinding(
+			key.WithKeys("a", "+"),
+			key.WithHelp("a", "add project"),
+		),
+		start: key.NewBinding(
+			key.WithKeys(" "),
+			key.WithHelp("space", "start clock"),
+			key.WithDisabled(),
+		),
+		stop: key.NewBinding(
+			key.WithKeys(" "),
+			key.WithHelp("space", "stop clock"),
+			key.WithDisabled(),
+		),
+		save: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "save time"),
+			key.WithDisabled(),
+		),
+		back: key.NewBinding(
+			key.WithKeys("esc", "delete"),
+			key.WithHelp("esc", "cancel"),
+		),
+	}
+
+	return Model{
+		store:      store,
+		data:       data,
+		newProject: &newProject,
+		addProjectForm: huh.NewForm(
+			huh.NewGroup(
+				huh.NewInput().
+					Title("Project Name").
+					Prompt("> ").
+					Value(&newProject),
+			),
+		),
+		preTimerForm: huh.NewForm(
+			huh.NewGroup(
+				huh.NewSelect[string]().
+					Title("Project").
+					Options(options...).
+					Value(&data.Project),
+			),
+		),
+		stopwatch: stopwatch.New(),
+		postTimerForm: huh.NewForm(
+			huh.NewGroup(
+				huh.NewText().
+					Title("Description").
+					Value(&data.Description),
+			),
+		),
+		step:   Project,
+		keymap: k,
+		help:   help.New(),
+	}
+}
+
+func (m Model) Init() tea.Cmd { return nil }
+
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch {
+		case key.Matches(msg, m.keymap.add):
+			if m.step == Project {
+				m.step = ProjectAdd
+				m.addProjectForm.GetFocusedField().Focus()
+				return m, nil
+			}
+		case key.Matches(msg, m.keymap.back):
+			return New(m.store), cmds.GoTo(cmds.Home)
+		case key.Matches(msg, m.keymap.start, m.keymap.stop):
+			m.keymap.start.SetEnabled(m.stopwatch.Running())
+			m.keymap.stop.SetEnabled(!m.stopwatch.Running())
+			return m, m.stopwatch.Toggle()
+		case key.Matches(msg, m.keymap.save):
+			m.data.EndTime = store.MinutesSinceMidnight(time.Now())
+			m.data.Duration = m.stopwatch.Elapsed()
+			m.step = Description
+
+			m.keymap.save.SetEnabled(false)
+			m.keymap.start.SetEnabled(false)
+			m.keymap.stop.SetEnabled(false)
+
+			return m, m.stopwatch.Stop()
+		}
+	}
+
+	var model tea.Model
+	var cmd tea.Cmd
+
+	switch m.step {
+	case Project:
+		model, cmd = m.preTimerForm.Update(msg)
+		m.preTimerForm = model.(*huh.Form)
+
+		if m.preTimerForm.State == huh.StateCompleted {
+			m.step = Stopwatch
+			m.keymap.add.SetEnabled(false)
+			m.keymap.save.SetEnabled(true)
+			m.keymap.start.SetEnabled(true)
+			m.data.StartTime = store.MinutesSinceMidnight(time.Now())
+			return m, tea.Batch(
+				m.stopwatch.Start(),
+				cmd,
+			)
+		}
+
+		return m, cmd
+	case ProjectAdd:
+		model, cmd = m.addProjectForm.Update(msg)
+		m.addProjectForm = model.(*huh.Form)
+
+		if m.addProjectForm.State == huh.StateCompleted {
+			project := store.Project{
+				Name: *m.newProject,
+			}
+			pid := strings.ReplaceAll(strings.ToLower(*m.newProject), " ", "_")
+			m.store.Projects[pid] = project
+
+			if err := m.store.Write(); err != nil {
+				return m, cmds.ErrCmd(err)
+			}
+
+			return New(m.store), cmd
+		}
+
+		return m, cmd
+	case Stopwatch:
+		m.stopwatch, cmd = m.stopwatch.Update(msg)
+		return m, cmd
+	case Description:
+		model, cmd = m.postTimerForm.Update(msg)
+		m.postTimerForm = model.(*huh.Form)
+		m.postTimerForm.GetFocusedField().Focus()
+
+		if m.postTimerForm.State == huh.StateCompleted {
+			// save data
+			id, err := uuid.NewRandom()
+			if err != nil {
+				return m, cmds.ErrCmd(err)
+			}
+
+			m.store.Entries = append(m.store.Entries, store.Entry{
+				ID:          id,
+				ProjectID:   m.data.Project,
+				Date:        time.Now().Format("2006-01-02"),
+				Description: m.data.Description,
+				StartTime:   m.data.StartTime,
+				EndTime:     m.data.EndTime,
+				CreatedAt:   time.Now(),
+			})
+
+			if err := m.store.Write(); err != nil {
+				return m, cmds.ErrCmd(err)
+			}
+
+			return New(m.store), cmds.GoTo(cmds.Home)
+		}
+
+		return m, cmd
+	}
+
+	return m, cmd
+}
+
+func (m Model) helpView() string {
+	return "\n" + m.help.ShortHelpView([]key.Binding{
+		m.keymap.add,
+		m.keymap.save,
+		m.keymap.start,
+		m.keymap.stop,
+		m.keymap.back,
+	})
+}
+
+func (m Model) View() string {
+	var s string
+
+	switch m.step {
+	case Project:
+		s = m.preTimerForm.View()
+	case ProjectAdd:
+		s = m.addProjectForm.View()
+	case Stopwatch:
+		s = m.stopwatch.View()
+	case Description:
+		s = m.postTimerForm.View()
+	}
+
+	s += m.helpView()
+
+	return s
+}
+
+/internal/tui/cmds/cmds.go
+package cmds
+
+import tea "github.com/charmbracelet/bubbletea"
+
+type Route int
+
+const (
+	Home Route = iota
+	Add
+	Export
+)
+
+func GoTo(to Route) tea.Cmd {
+	return func() tea.Msg {
+		return to
+	}
+}
+
+type ErrMsg struct {
+	Err error
+}
+
+func ErrCmd(err error) tea.Cmd {
+	return func() tea.Msg {
+		return ErrMsg{
+			Err: err,
+		}
+	}
+}
+
+/internal/store/store.go
+package store
+
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"time"
+
+	"github.com/google/uuid"
+)
+
+const permissions = 0o644
+
+type Minutes int
+
+func MinutesSinceMidnight(t time.Time) Minutes {
+	return Minutes(t.Hour()*60 + t.Minute())
+}
+
+func (m Minutes) Format() string {
+	return fmt.Sprintf("%02d:%02d", m/60, m%60)
+}
+
+type Store struct {
+	Version  int                `json:"version"`
+	Entries  []Entry            `json:"entries"`
+	Projects map[string]Project `json:"projects"`
+}
+
+// Both times store the timestamps as minutes since midnight
+type Entry struct {
+	ID          uuid.UUID `json:"id"`
+	ProjectID   string    `json:"project_id"`
+	Date        string    `json:"date"`
+	Description string    `json:"description"`
+	StartTime   Minutes   `json:"start_time"`
+	EndTime     Minutes   `json:"end_time"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type Project struct {
+	Name string `json:"name"`
+}
+
+func getPath() (string, error) {
+	if path, ok := os.LookupEnv("TIMELOG_STOREPATH"); ok {
+		return path, nil
+	}
+
+	configDir, err := os.UserConfigDir()
+	if err != nil {
+		return "", err
+	}
+
+	path := filepath.Join(configDir, "timelog", "store.json")
+
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		return "", err
+	}
+
+	return path, nil
+}
+
+func writeEmptyStore(path string) ([]byte, error) {
+	data, err := json.Marshal(New())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := os.WriteFile(path, data, permissions); err != nil {
+		return nil, err
+	}
+
+	return data, nil
+}
+
+func New() *Store {
+	return &Store{
+		Version:  1,
+		Entries:  []Entry{},
+		Projects: map[string]Project{},
+	}
+}
+
+func ReadFile() (*Store, error) {
+	path, err := getPath()
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			data, err = writeEmptyStore(path)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+
+	store := &Store{}
+	if err := json.Unmarshal(data, &store); err != nil {
+		return nil, err
+	}
+
+	return store, nil
+}
+
+func (s *Store) Write() error {
+	path, err := getPath()
+	if err != nil {
+		return err
+	}
+
+	data, err := json.Marshal(*s)
+	if err != nil {
+		return err
+	}
+
+	if err := os.WriteFile(path, data, permissions); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
+You’re not wrong — this *does* feel chaotic, but importantly: **it’s a very normal kind of chaos for first-pass Bubble Tea apps**. The good news is that the problems are structural, not conceptual. You’re already doing the hard things correctly.
+
+Below I’ll do three things:
+
+1. **Diagnose what’s actually wrong** (why it feels chaotic)
+2. **Propose a clean, idiomatic structure for Bubble Tea**
+3. **Show concrete refactors of your `add` screen** (with example files & patterns)
+
+I will *not* rewrite everything wholesale — the goal is **maintainability and mental clarity**, not cleverness.
+
+---
+
+## 1. Why your code feels chaotic (root causes)
+
+### 1.1 Too many responsibilities in one file
+
+`add.go` currently does all of this:
+
+* screen routing
+* state machine (steps)
+* keyboard handling
+* form construction
+* persistence logic
+* stopwatch control
+* UI rendering
+
+That’s why it feels overwhelming: **the file is the entire feature**.
+
+---
+
+### 1.2 Implicit state machine
+
+You *do* have a state machine:
+
+```go
+type FormStep int
+```
+
+But the logic for transitions is scattered across:
+
+* key handling
+* form completion
+* stopwatch events
+
+So you constantly have to answer:
+
+> “What state am I in, and who’s allowed to change it?”
+
+---
+
+### 1.3 Side effects inside `Update`
+
+Things like:
+
+```go
+m.store.Write()
+uuid.NewRandom()
+time.Now()
+```
+
+are mixed directly into UI logic. This makes it hard to reason about correctness and test anything.
+
+---
+
+### 1.4 Model mutation is non-obvious
+
+Bubble Tea encourages immutability, but here:
+
+* some fields are mutated
+* some are replaced (`return New(m.store)`)
+* some are pointers (`*FormData`, `*string`)
+
+This inconsistency increases cognitive load.
+
+---
+
+## 2. What “good” Bubble Tea structure looks like
+
+A maintainable Bubble Tea app usually follows these rules:
+
+### Rule 1: One screen = one package
+
+You already do this 👍
+`/internal/tui/screens/add`
+
+### Rule 2: Split **model**, **update**, **view**, **state**
+
+Instead of one god file:
+
+```
+add/
+├── model.go      // data & construction
+├── update.go     // Update logic + transitions
+├── view.go       // rendering only
+├── state.go      // step enum + helpers
+├── keys.go       // keymap
+└── actions.go    // side effects (store writes, IDs, time)
+```
+
+Each file stays small and boring.
+
+---
+
+### Rule 3: Make the state machine explicit
+
+Instead of “if this key + if that form” everywhere, we want:
+
+```go
+func (m Model) transition(next Step) Model
+```
+
+So **all state changes are centralized**.
+
+---
+
+### Rule 4: Keep side effects behind commands
+
+UI logic should *request* actions, not *do* them.
+
+---
+
+## 3. Refactoring your `add` screen (concrete)
+
+Below is a **realistic refactor** of your code, not theoretical advice.
+
+---
+
+## 3.1 `state.go` — make the workflow obvious
+
+```go
+package add
+
+type Step int
+
+const (
+	StepProject Step = iota
+	StepProjectAdd
+	StepStopwatch
+	StepDescription
+)
+
+func (s Step) String() string {
+	switch s {
+	case StepProject:
+		return "project"
+	case StepProjectAdd:
+		return "project_add"
+	case StepStopwatch:
+		return "stopwatch"
+	case StepDescription:
+		return "description"
+	default:
+		return "unknown"
+	}
+}
+```
+
+Now you *name* the flow instead of guessing it.
+
+---
+
+## 3.2 `model.go` — model = data only
+
+```go
+package add
+
+import (
+	"time"
+
+	"github.com/DerBaumann/timelog/internal/store"
+	"github.com/charmbracelet/bubbles/help"
+	"github.com/charmbracelet/bubbles/stopwatch"
+	"github.com/charmbracelet/huh"
+)
+
+type FormData struct {
+	Project     string
+	StartTime   store.Minutes
+	EndTime     store.Minutes
+	Duration    time.Duration
+	Description string
+}
+
+type Model struct {
+	store *store.Store
+	step  Step
+
+	data FormData
+
+	// UI components
+	projectForm    *huh.Form
+	projectAddForm *huh.Form
+	descriptionForm *huh.Form
+	stopwatch      stopwatch.Model
+
+	keys keymap
+	help help.Model
+}
+
+func New(store *store.Store) Model {
+	m := Model{
+		store: store,
+		step:  StepProject,
+		data:  FormData{},
+		help:  help.New(),
+		keys:  newKeymap(),
+	}
+
+	m.initForms()
+	m.stopwatch = stopwatch.New()
+
+	return m
+}
+```
+
+**Key improvements:**
+
+* `FormData` is no longer a pointer
+* model construction is boring and predictable
+* no side effects
+
+---
+
+## 3.3 `keys.go` — keyboard logic isolated
+
+```go
+package add
+
+import "github.com/charmbracelet/bubbles/key"
+
+type keymap struct {
+	Add   key.Binding
+	Start key.Binding
+	Stop  key.Binding
+	Save  key.Binding
+	Back  key.Binding
+}
+
+func newKeymap() keymap {
+	return keymap{
+		Add: key.NewBinding(
+			key.WithKeys("a", "+"),
+			key.WithHelp("a", "add project"),
+		),
+		Start: key.NewBinding(
+			key.WithKeys(" "),
+			key.WithHelp("space", "start"),
+			key.WithDisabled(),
+		),
+		Stop: key.NewBinding(
+			key.WithKeys(" "),
+			key.WithHelp("space", "stop"),
+			key.WithDisabled(),
+		),
+		Save: key.NewBinding(
+			key.WithKeys("enter"),
+			key.WithHelp("enter", "save"),
+			key.WithDisabled(),
+		),
+		Back: key.NewBinding(
+			key.WithKeys("esc"),
+			key.WithHelp("esc", "cancel"),
+		),
+	}
+}
+```
+
+Now key logic is **not mixed with behavior**.
+
+---
+
+## 3.4 `update.go` — Update becomes readable
+
+```go
+package add
+
+import (
+	tea "github.com/charmbracelet/bubbletea"
+)
+
+func (m Model) Init() tea.Cmd {
+	return nil
+}
+
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+
+	case tea.KeyMsg:
+		return m.handleKey(msg)
+
+	default:
+		return m.updateStep(msg)
+	}
+}
+```
+
+### Key handling is now focused
+
+```go
+func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch {
+	case key.Matches(msg, m.keys.Back):
+		return New(m.store), goHomeCmd()
+
+	case key.Matches(msg, m.keys.Add) && m.step == StepProject:
+		return m.transition(StepProjectAdd), nil
+
+	case key.Matches(msg, m.keys.Start, m.keys.Stop):
+		return m.toggleStopwatch()
+
+	case key.Matches(msg, m.keys.Save) && m.step == StepStopwatch:
+		return m.finishTiming()
+	}
+
+	return m, nil
+}
+```
+
+---
+
+### Step-specific updates are isolated
+
+```go
+func (m Model) updateStep(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch m.step {
+
+	case StepProject:
+		return m.updateProject(msg)
+
+	case StepProjectAdd:
+		return m.updateProjectAdd(msg)
+
+	case StepStopwatch:
+		return m.updateStopwatch(msg)
+
+	case StepDescription:
+		return m.updateDescription(msg)
+	}
+
+	return m, nil
+}
+```
+
+This alone removes ~70% of the mental load.
+
+---
+
+## 3.5 `actions.go` — side effects live here
+
+```go
+package add
+
+import (
+	"strings"
+	"time"
+
+	"github.com/DerBaumann/timelog/internal/store"
+	"github.com/google/uuid"
+)
+
+func (m Model) saveEntry() error {
+	id := uuid.New()
+
+	m.store.Entries = append(m.store.Entries, store.Entry{
+		ID:          id,
+		ProjectID:   m.data.Project,
+		Date:        time.Now().Format("2006-01-02"),
+		Description: m.data.Description,
+		StartTime:   m.data.StartTime,
+		EndTime:     m.data.EndTime,
+		CreatedAt:   time.Now(),
+	})
+
+	return m.store.Write()
+}
+
+func normalizeProjectID(name string) string {
+	return strings.ReplaceAll(strings.ToLower(name), " ", "_")
+}
+```
+
+Now persistence is **testable** and **reusable**.
+
+---
+
+## 3.6 `view.go` — no logic, just rendering
+
+```go
+package add
+
+func (m Model) View() string {
+	var body string
+
+	switch m.step {
+	case StepProject:
+		body = m.projectForm.View()
+	case StepProjectAdd:
+		body = m.projectAddForm.View()
+	case StepStopwatch:
+		body = m.stopwatch.View()
+	case StepDescription:
+		body = m.descriptionForm.View()
+	}
+
+	return body + "\n" + m.help.ShortHelpView(m.keys.all())
+}
+```
+
+If `View()` ever feels complex, that’s a smell.
+
+---
+
+## 4. Resulting benefits
+
+After this refactor:
+
+* Each file is **boring**
+* You know exactly where to add things
+* State transitions are obvious
+* Bugs become local instead of global
+* You can add more screens without fear
+
+And most importantly:
+
+> **Your app stops feeling like a tangled ball of yarn**
+
+---
+
+## 5. Final reassurance
+
+Your instincts are good. This code isn’t bad — it’s just **unstructured growth**.
+
+If you want, next we can:
+
+* refactor `store` into a repository pattern
+* introduce a global router model
+* add undo / cancel flows cleanly
+* or test Bubble Tea models properly
+
+Just tell me where you want to go next.
