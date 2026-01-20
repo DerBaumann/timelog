@@ -9,17 +9,17 @@ const (
 	StepDescription
 )
 
-func (s Step) String() string {
-	switch s {
-	case StepProject:
-		return "project"
-	case StepProjectAdd:
-		return "project_add"
-	case StepStopwatch:
-		return "stopwatch"
-	case StepDescription:
-		return "description"
-	default:
-		return "unknown"
-	}
-}
+// func (s Step) String() string {
+// 	switch s {
+// 	case StepProject:
+// 		return "project"
+// 	case StepProjectAdd:
+// 		return "project_add"
+// 	case StepStopwatch:
+// 		return "stopwatch"
+// 	case StepDescription:
+// 		return "description"
+// 	default:
+// 		return "unknown"
+// 	}
+// }
