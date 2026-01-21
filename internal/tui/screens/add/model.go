@@ -34,46 +34,56 @@ type Model struct {
 }
 
 func New(store *store.Store) Model {
-	var options []huh.Option[string]
-	for k, p := range store.Projects {
-		options = append(options, huh.NewOption(p.Name, k))
-	}
-
 	data := &FormData{}
 	var newProject string
 
-	k := newKeymap()
-
 	return Model{
-		store:      store,
-		data:       data,
-		newProject: &newProject,
-		projectAddForm: huh.NewForm(
-			huh.NewGroup(
-				huh.NewInput().
-					Title("Project Name").
-					Prompt("> ").
-					Value(&newProject),
-			),
-		),
-		projectForm: huh.NewForm(
-			huh.NewGroup(
-				huh.NewSelect[string]().
-					Title("Project").
-					Options(options...).
-					Value(&data.Project),
-			),
-		),
-		stopwatch: stopwatch.New(),
-		descriptionForm: huh.NewForm(
-			huh.NewGroup(
-				huh.NewText().
-					Title("Description").
-					Value(&data.Description),
-			),
-		),
-		step:   StepProject,
-		keymap: k,
-		help:   help.New(),
+		store:           store,
+		data:            data,
+		newProject:      &newProject,
+		projectAddForm:  newProjectAddForm(&newProject),
+		projectForm:     newProjectForm(store.Projects, &data.Project),
+		stopwatch:       stopwatch.New(),
+		descriptionForm: newDescriptionForm(&data.Description),
+		step:            StepProject,
+		keymap:          newKeymap(),
+		help:            help.New(),
 	}
+}
+
+func newProjectAddForm(value *string) *huh.Form {
+	return huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().
+				Title("Project Name").
+				Prompt("> ").
+				Value(value),
+		),
+	)
+}
+
+func newProjectForm(projects map[string]store.Project, value *string) *huh.Form {
+	var options []huh.Option[string]
+	for k, p := range projects {
+		options = append(options, huh.NewOption(p.Name, k))
+	}
+
+	return huh.NewForm(
+		huh.NewGroup(
+			huh.NewSelect[string]().
+				Title("Project").
+				Options(options...).
+				Value(value),
+		),
+	)
+}
+
+func newDescriptionForm(value *string) *huh.Form {
+	return huh.NewForm(
+		huh.NewGroup(
+			huh.NewText().
+				Title("Description").
+				Value(value),
+		),
+	)
 }
