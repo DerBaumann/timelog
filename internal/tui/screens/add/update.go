@@ -1,7 +1,6 @@
 package add
 
 import (
-	"strings"
 	"time"
 
 	"github.com/DerBaumann/timelog/internal/store"
@@ -9,7 +8,15 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
-	"github.com/google/uuid"
+)
+
+type Step int
+
+const (
+	StepProject Step = iota
+	StepProjectAdd
+	StepStopwatch
+	StepDescription
 )
 
 func (m Model) Init() tea.Cmd { return nil }
@@ -69,17 +76,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.projectAddForm = model.(*huh.Form)
 
 		if m.projectAddForm.State == huh.StateCompleted {
-			project := store.Project{
-				Name: *m.newProject,
-			}
-			pid := strings.ReplaceAll(strings.ToLower(*m.newProject), " ", "_")
-			m.store.Projects[pid] = project
-
-			if err := m.store.Write(); err != nil {
-				return m, cmds.ErrCmd(err)
-			}
-
-			return New(m.store), cmd
+			return New(m.store), tea.Batch(cmd, m.saveProject)
 		}
 
 		return m, cmd
@@ -92,27 +89,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.descriptionForm.GetFocusedField().Focus()
 
 		if m.descriptionForm.State == huh.StateCompleted {
-			// save data
-			id, err := uuid.NewRandom()
-			if err != nil {
-				return m, cmds.ErrCmd(err)
-			}
-
-			m.store.Entries = append(m.store.Entries, store.Entry{
-				ID:          id,
-				ProjectID:   m.data.Project,
-				Date:        time.Now().Format("2006-01-02"),
-				Description: m.data.Description,
-				StartTime:   m.data.StartTime,
-				EndTime:     m.data.EndTime,
-				CreatedAt:   time.Now(),
-			})
-
-			if err := m.store.Write(); err != nil {
-				return m, cmds.ErrCmd(err)
-			}
-
-			return New(m.store), cmds.GoTo(cmds.Home)
+			return New(m.store), m.save
 		}
 
 		return m, cmd
