@@ -18,12 +18,15 @@ type FormData struct {
 }
 
 type Model struct {
-	store *store.Store
-	step  Step
+	store      *store.Store
+	step       Step
+	showCancel bool
 
-	data *FormData // should be changed to value
+	data       *FormData // should be changed to value
+	newProject *string
+	cancelling *bool
 
-	newProject      *string
+	cancelConfirm   *huh.Form
 	projectAddForm  *huh.Form
 	projectForm     *huh.Form
 	descriptionForm *huh.Form
@@ -36,19 +39,38 @@ type Model struct {
 func New(store *store.Store) Model {
 	data := &FormData{}
 	var newProject string
+	var cancelling bool
 
 	return Model{
-		store:           store,
-		data:            data,
-		newProject:      &newProject,
+		store:      store,
+		step:       StepProject,
+		showCancel: false,
+
+		data:       data,
+		newProject: &newProject,
+		cancelling: &cancelling,
+
+		cancelConfirm:   newCancelConfirm(&cancelling),
 		projectAddForm:  newProjectAddForm(&newProject),
 		projectForm:     newProjectForm(store.Projects, &data.Project),
-		stopwatch:       stopwatch.New(),
 		descriptionForm: newDescriptionForm(&data.Description),
-		step:            StepProject,
-		keymap:          newKeymap(),
-		help:            help.New(),
+		stopwatch:       stopwatch.New(),
+
+		keymap: newKeymap(),
+		help:   help.New(),
 	}
+}
+
+func newCancelConfirm(value *bool) *huh.Form {
+	return huh.NewForm(
+		huh.NewGroup(
+			huh.NewConfirm().
+				Title("Cancel entry?").
+				Affirmative("Yes").
+				Negative("No").
+				Value(value),
+		),
+	)
 }
 
 func newProjectAddForm(value *string) *huh.Form {

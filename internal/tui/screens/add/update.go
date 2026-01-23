@@ -17,11 +17,31 @@ const (
 	StepProjectAdd
 	StepStopwatch
 	StepDescription
+	StepCancel
 )
 
 func (m Model) Init() tea.Cmd { return nil }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var model tea.Model
+	var cmd tea.Cmd
+
+	if m.showCancel {
+		model, cmd = m.cancelConfirm.Update(msg)
+		m.cancelConfirm = model.(*huh.Form)
+
+		if m.cancelConfirm.State == huh.StateCompleted {
+			if *m.cancelling {
+				return New(m.store), cmds.GoTo(cmds.Home)
+			} else {
+				m.cancelConfirm.State = huh.StateNormal
+				m.showCancel = false
+			}
+		}
+
+		return m, cmd
+	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch {
@@ -32,7 +52,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case key.Matches(msg, m.keymap.back):
-			return New(m.store), cmds.GoTo(cmds.Home)
+			if m.showCancel {
+				return New(m.store), cmds.GoTo(cmds.Home)
+			}
+			m.showCancel = true
+			return m, m.cancelConfirm.Init()
 		case key.Matches(msg, m.keymap.start, m.keymap.stop):
 			m.keymap.start.SetEnabled(m.stopwatch.Running())
 			m.keymap.stop.SetEnabled(!m.stopwatch.Running())
@@ -49,9 +73,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.stopwatch.Stop()
 		}
 	}
-
-	var model tea.Model
-	var cmd tea.Cmd
 
 	switch m.step {
 	case StepProject:
@@ -94,6 +115,5 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		return m, cmd
 	}
-
 	return m, cmd
 }
