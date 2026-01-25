@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	store, err := store.ReadFile()
+	store, err := store.Read()
 	if err != nil {
 		log.Fatal(err)
 	}
