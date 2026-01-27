@@ -25,32 +25,28 @@ type Model struct {
 	formData       *shared.FormData
 	keymap         keymap
 	help           help.Model
-	newProject     string
 	projectAddForm *huh.Form
 }
 
 func New(store *store.Store, formData *shared.FormData) Model {
-	var newProject string
-
 	return Model{
-		store:      store,
-		newProject: newProject,
-		formData:   formData,
-		keymap:     newKeymap(),
-		help:       help.New(),
+		store:    store,
+		formData: formData,
+		keymap:   newKeymap(),
+		help:     help.New(),
 		projectAddForm: huh.NewForm(
 			huh.NewGroup(
 				huh.NewInput().
 					Title("Project Name").
 					Prompt("> ").
-					Value(&newProject),
+					Key("project"),
 			),
 		),
 	}
 }
 
 func (m Model) Init() tea.Cmd {
-	return nil
+	return m.projectAddForm.GetFocusedField().Focus()
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -67,7 +63,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.projectAddForm = model.(*huh.Form)
 
 	if m.projectAddForm.State == huh.StateCompleted {
-		return m, tea.Batch(cmd, shared.SaveProject(m.store, m.newProject), steps.ChangeStep(steps.StepProject))
+		project := m.projectAddForm.GetString("project")
+		return m, tea.Batch(
+			cmd,
+			shared.SaveProject(m.store, project),
+			steps.ChangeStep(steps.StepProject),
+		)
 	}
 
 	return m, cmd
