@@ -48,7 +48,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case steps.StepMsg:
 		switch msg {
 		case steps.StepProject:
-			m.step = project.New(m.store.Projects, m.formData)
+			m.step = project.New(m.store, m.formData)
 		case steps.StepProjectAdd:
 			m.step = project_add.New(m.store, m.formData)
 		case steps.StepStopwatch:

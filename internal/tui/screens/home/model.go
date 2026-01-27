@@ -16,7 +16,7 @@ type Model struct {
 	help   help.Model
 }
 
-func New(store *store.Store) Model {
+func New(s *store.Store) Model {
 	cols := []table.Column{
 		{Title: "Day", Width: 15},
 		{Title: "Project", Width: 15},
@@ -26,10 +26,16 @@ func New(store *store.Store) Model {
 
 	rows := []table.Row{}
 
-	for _, e := range store.Entries {
+	for _, e := range s.Entries {
+		var project *store.Project
+		for _, p := range s.Projects {
+			if p.ID == e.ProjectID {
+				project = &p
+			}
+		}
 		rows = append(rows, table.Row{
 			e.Date,
-			store.Projects[e.ProjectID].Name,
+			project.Name,
 			e.Description,
 			fmt.Sprintf("%s - %s", e.StartTime.Format(), e.EndTime.Format()),
 		})
@@ -42,23 +48,23 @@ func New(store *store.Store) Model {
 		table.WithHeight(7),
 	)
 
-	s := table.DefaultStyles()
-	s.Header = s.Header.
+	styles := table.DefaultStyles()
+	styles.Header = styles.Header.
 		BorderStyle(lipgloss.NormalBorder()).
 		BorderForeground(lipgloss.Color("240")).
 		BorderBottom(true).
 		Bold(false)
-	s.Selected = s.Selected.
+	styles.Selected = styles.Selected.
 		Foreground(lipgloss.Color("229")).
 		Background(lipgloss.Color("57")).
 		Bold(false)
-	t.SetStyles(s)
+	t.SetStyles(styles)
 
 	k := newKeymap()
 
 	return Model{
 		table:  t,
-		store:  store,
+		store:  s,
 		keymap: k,
 		help:   help.New(),
 	}

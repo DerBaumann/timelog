@@ -7,16 +7,16 @@ import (
 )
 
 type Store struct {
-	Version  int                `json:"version"`
-	Entries  []Entry            `json:"entries"`
-	Projects map[string]Project `json:"projects"`
+	Version  int       `json:"version"`
+	Entries  []Entry   `json:"entries"`
+	Projects []Project `json:"projects"`
 }
 
 func New() *Store {
 	return &Store{
 		Version:  1,
 		Entries:  []Entry{},
-		Projects: map[string]Project{},
+		Projects: []Project{},
 	}
 }
 

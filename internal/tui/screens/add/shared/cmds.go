@@ -38,9 +38,10 @@ func Save(s *store.Store, formData *FormData) tea.Cmd {
 func SaveProject(s *store.Store, newProject string) tea.Cmd {
 	return func() tea.Msg {
 		pid := strings.ReplaceAll(strings.ToLower(newProject), " ", "_")
-		s.Projects[pid] = store.Project{
+		s.Projects = append(s.Projects, store.Project{
+			ID:   pid,
 			Name: newProject,
-		}
+		})
 
 		if err := s.Write(); err != nil {
 			return cmds.ErrCmd(err)()

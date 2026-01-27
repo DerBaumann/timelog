@@ -29,7 +29,7 @@ func New(store *store.Store) Model {
 
 	return Model{
 		store:      store,
-		step:       project.New(store.Projects, data),
+		step:       project.New(store, data),
 		showCancel: false,
 
 		formData:   data,

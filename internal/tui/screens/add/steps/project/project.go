@@ -30,30 +30,26 @@ func (m Model) helpView() string {
 }
 
 type Model struct {
-	formData        *shared.FormData
-	selectedProject string
-	projectForm     *huh.Form
-	keymap          keymap
-	help            help.Model
+	formData    *shared.FormData
+	projectForm *huh.Form
+	keymap      keymap
+	help        help.Model
 }
 
-func New(projects map[string]store.Project, formData *shared.FormData) Model {
+func New(s *store.Store, formData *shared.FormData) Model {
 	var options []huh.Option[string]
-	for k, p := range projects {
-		options = append(options, huh.NewOption(p.Name, k))
+	for _, p := range s.Projects {
+		options = append(options, huh.NewOption(p.Name, p.ID))
 	}
 
-	var selectedProject string
-
 	return Model{
-		formData:        formData,
-		selectedProject: selectedProject,
+		formData: formData,
 		projectForm: huh.NewForm(
 			huh.NewGroup(
 				huh.NewSelect[string]().
 					Title("Project").
 					Options(options...).
-					Value(&selectedProject),
+					Key("project"),
 			),
 		),
 		keymap: newKeymap(),
@@ -81,7 +77,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.projectForm = model.(*huh.Form)
 
 	if m.projectForm.State == huh.StateCompleted {
-		m.formData.Project = m.selectedProject
+		m.formData.Project = m.projectForm.GetString("project")
 
 		return m, steps.ChangeStep(steps.StepStopwatch)
 	}

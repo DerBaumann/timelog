@@ -67,8 +67,15 @@ func exportCmd(s *store.Store) tea.Cmd {
 			var entries []DocEntry
 			for _, e := range s.Entries {
 				if e.Date == date {
+					var project *store.Project
+					for _, p := range s.Projects {
+						if p.ID == e.ProjectID {
+							project = &p
+						}
+					}
+
 					entries = append(entries, DocEntry{
-						Project:     s.Projects[e.ProjectID].Name,
+						Project:     project.Name,
 						Description: strings.ReplaceAll(e.Description, "\n", "<br />"),
 						Start:       e.StartTime.Format(),
 						End:         e.EndTime.Format(),
