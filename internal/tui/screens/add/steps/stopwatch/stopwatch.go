@@ -52,6 +52,8 @@ type Model struct {
 }
 
 func New(formData *shared.FormData) Model {
+	formData.StartTime = store.MinutesSinceMidnight(time.Now())
+
 	return Model{
 		formData:  formData,
 		keymap:    newKeymap(),
@@ -61,7 +63,6 @@ func New(formData *shared.FormData) Model {
 }
 
 func (m Model) Init() tea.Cmd {
-	m.formData.StartTime = store.MinutesSinceMidnight(time.Now())
 	return m.stopwatch.Start()
 }
 
