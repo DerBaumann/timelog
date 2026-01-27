@@ -1,6 +1,7 @@
 package stopwatch
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/DerBaumann/timelog/internal/store"
@@ -92,7 +93,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
-	s := m.stopwatch.View()
+	s := fmt.Sprintf("Started at: %s\n\n", m.formData.StartTime.Format())
+
+	s += m.stopwatch.View()
 
 	s += m.helpView()
 
