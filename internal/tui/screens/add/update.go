@@ -49,17 +49,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg {
 		case steps.StepProject:
 			m.step = project.New(m.store, m.formData)
-			return m, m.step.Init()
 		case steps.StepProjectAdd:
 			m.step = project_add.New(m.store, m.formData)
-			return m, m.step.Init()
 		case steps.StepStopwatch:
 			m.step = stopwatch.New(m.formData)
-			return m, m.step.Init()
 		case steps.StepDescription:
 			m.step = description.New(m.store, m.formData)
-			return m, m.step.Init()
 		}
+
+		return m, m.step.Init()
 	}
 
 	m.step, cmd = m.step.Update(msg)
