@@ -67,8 +67,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch {
-		case key.Matches(msg, m.keymap.add):
+		if key.Matches(msg, m.keymap.add) {
 			return m, steps.ChangeStep(steps.StepProjectAdd)
 		}
 	}
@@ -78,11 +77,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	if m.projectForm.State == huh.StateCompleted {
 		m.formData.Project = m.projectForm.GetString("project")
-
 		return m, steps.ChangeStep(steps.StepStopwatch)
+	} else {
+		return m, cmd
 	}
-
-	return m, cmd
 }
 
 func (m Model) View() string {

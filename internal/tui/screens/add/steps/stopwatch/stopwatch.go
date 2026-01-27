@@ -88,7 +88,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	m.stopwatch, cmd = m.stopwatch.Update(msg)
-
 	return m, cmd
 }
 
