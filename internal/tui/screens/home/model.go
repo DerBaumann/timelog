@@ -6,7 +6,6 @@ import (
 	"github.com/DerBaumann/timelog/internal/store"
 	"github.com/charmbracelet/bubbles/help"
 	"github.com/charmbracelet/bubbles/table"
-	"github.com/charmbracelet/lipgloss"
 )
 
 type Model struct {
@@ -17,6 +16,18 @@ type Model struct {
 }
 
 func New(s *store.Store) Model {
+	k := newKeymap()
+	t := newTable(s)
+
+	return Model{
+		table:  t,
+		store:  s,
+		keymap: k,
+		help:   help.New(),
+	}
+}
+
+func newTable(s *store.Store) table.Model {
 	cols := []table.Column{
 		{Title: "Day", Width: 15},
 		{Title: "Project", Width: 15},
@@ -48,24 +59,7 @@ func New(s *store.Store) Model {
 		table.WithHeight(7),
 	)
 
-	styles := table.DefaultStyles()
-	styles.Header = styles.Header.
-		BorderStyle(lipgloss.NormalBorder()).
-		BorderForeground(lipgloss.Color("240")).
-		BorderBottom(true).
-		Bold(false)
-	styles.Selected = styles.Selected.
-		Foreground(lipgloss.Color("229")).
-		Background(lipgloss.Color("57")).
-		Bold(false)
-	t.SetStyles(styles)
+	t.SetStyles(newTableStyles())
 
-	k := newKeymap()
-
-	return Model{
-		table:  t,
-		store:  s,
-		keymap: k,
-		help:   help.New(),
-	}
+	return t
 }
