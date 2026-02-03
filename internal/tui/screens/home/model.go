@@ -16,13 +16,10 @@ type Model struct {
 }
 
 func New(s *store.Store) Model {
-	k := newKeymap()
-	t := newTable(s)
-
 	return Model{
-		table:  t,
+		table:  newTable(s),
 		store:  s,
-		keymap: k,
+		keymap: newKeymap(),
 		help:   help.New(),
 	}
 }
