@@ -26,6 +26,7 @@ func New(s *store.Store) Model {
 
 func newTable(s *store.Store) table.Model {
 	cols := []table.Column{
+		{Title: "ID", Width: 0},
 		{Title: "Day", Width: 15},
 		{Title: "Project", Width: 15},
 		{Title: "Description", Width: 15},
@@ -42,6 +43,7 @@ func newTable(s *store.Store) table.Model {
 			}
 		}
 		rows = append(rows, table.Row{
+			e.ID.String(),
 			e.Date,
 			project.Name,
 			e.Description,
