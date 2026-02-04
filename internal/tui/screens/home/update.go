@@ -1,6 +1,9 @@
 package home
 
 import (
+	"slices"
+
+	"github.com/DerBaumann/timelog/internal/store"
 	"github.com/DerBaumann/timelog/internal/tui/cmds"
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
@@ -20,8 +23,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.deleteForm.State == huh.StateCompleted {
 			// Get selected row
+			row := m.table.SelectedRow()
+
 			// Get ID from row
+			id := row[0]
+
 			// Remove project from store.Projects ( filter (p -> p.id != id) )
+			m.store.Projects = slices.DeleteFunc(m.store.Projects, func(p store.Project) bool {
+				return p.ID == id
+			})
+
+			if err := m.store.Write(); err != nil {
+				return m, cmds.ErrCmd(err)
+			}
 
 			m.deleting = false
 		}
