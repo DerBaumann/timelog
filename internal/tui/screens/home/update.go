@@ -22,22 +22,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.deleteForm = model.(*huh.Form)
 
 		if m.deleteForm.State == huh.StateCompleted {
-			// Get selected row
-			row := m.table.SelectedRow()
+			if m.deleteForm.GetBool(deleteFormKey) {
+				id := m.table.SelectedRow()[0]
 
-			// Get ID from row
-			id := row[0]
+				m.store.Projects = slices.DeleteFunc(m.store.Projects, func(p store.Project) bool {
+					return p.ID == id
+				})
 
-			// Remove project from store.Projects ( filter (p -> p.id != id) )
-			m.store.Projects = slices.DeleteFunc(m.store.Projects, func(p store.Project) bool {
-				return p.ID == id
-			})
-
-			if err := m.store.Write(); err != nil {
-				return m, cmds.ErrCmd(err)
+				if err := m.store.Write(); err != nil {
+					return m, cmds.ErrCmd(err)
+				}
 			}
 
 			m.deleting = false
+			m.deleteForm = newDeleteForm()
 		}
 
 		return m, cmd
@@ -49,6 +47,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, cmds.GoTo(cmds.Add)
 			case key.Matches(msg, m.keymap.export):
 				return m, cmds.GoTo(cmds.Export)
+			case key.Matches(msg, m.keymap.delete):
+				m.deleting = true
+				return m, nil
 			}
 		}
 		m.table, cmd = m.table.Update(msg)

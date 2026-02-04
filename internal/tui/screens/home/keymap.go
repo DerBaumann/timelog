@@ -4,7 +4,8 @@ import "github.com/charmbracelet/bubbles/key"
 
 type keymap struct {
 	add,
-	export key.Binding
+	export,
+	delete key.Binding
 }
 
 func newKeymap() keymap {
@@ -17,6 +18,10 @@ func newKeymap() keymap {
 			key.WithKeys("e"),
 			key.WithHelp("e", "export data"),
 		),
+		delete: key.NewBinding(
+			key.WithKeys("D"),
+			key.WithHelp("D", "delete selected item"),
+		),
 	}
 }
 
@@ -24,6 +29,7 @@ func (m Model) helpView() string {
 	return "\n" + m.help.ShortHelpView([]key.Binding{
 		m.keymap.add,
 		m.keymap.export,
+		m.keymap.delete,
 		m.table.KeyMap.LineDown,
 		m.table.KeyMap.LineUp,
 	})
