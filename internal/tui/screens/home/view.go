@@ -1,7 +1,13 @@
 package home
 
 func (m Model) View() string {
-	s := m.table.View() + "\n"
+	var s string
+
+	if m.deleting {
+		s = m.deleteForm.View() + "\n"
+	} else {
+		s = m.table.View() + "\n"
+	}
 
 	s += m.helpView()
 
