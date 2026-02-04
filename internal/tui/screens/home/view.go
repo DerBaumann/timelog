@@ -4,9 +4,13 @@ func (m Model) View() string {
 	var s string
 
 	if m.deleting {
-		s = m.deleteForm.View() + "\n"
+		s += m.deleteForm.View() + "\n"
 	} else {
-		s = m.table.View() + "\n"
+		if len(m.table.Rows()) < 1 {
+			s += "No rows found!"
+		} else {
+			s += m.table.View() + "\n"
+		}
 	}
 
 	s += m.helpView()

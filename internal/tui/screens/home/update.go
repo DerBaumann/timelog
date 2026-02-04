@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/key"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/huh"
+	"github.com/google/uuid"
 )
 
 func (m Model) Init() tea.Cmd { return nil }
@@ -23,15 +24,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		if m.deleteForm.State == huh.StateCompleted {
 			if m.deleteForm.GetBool(deleteFormKey) {
-				id := m.table.SelectedRow()[0]
+				id := uuid.MustParse(m.table.SelectedRow()[0])
 
-				m.store.Projects = slices.DeleteFunc(m.store.Projects, func(p store.Project) bool {
-					return p.ID == id
+				m.store.Entries = slices.DeleteFunc(m.store.Entries, func(e store.Entry) bool {
+					return e.ID == id
 				})
 
 				if err := m.store.Write(); err != nil {
 					return m, cmds.ErrCmd(err)
 				}
+
+				m.table = newTable(m.store)
 			}
 
 			m.deleting = false
